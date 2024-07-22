@@ -17,7 +17,7 @@ import {
 } from "@heroicons/react/24/solid";
 import logo from '../Assets/Logo.png';
 
-function Sidebar({messageCount = 762}) {
+function Sidebar({messageCount = 762, userCount = 1872}) {
   const location = useLocation();
   const navigate = useNavigate();
   const [isCreateOpen, setCreateOpen] = useState(false);
@@ -62,7 +62,7 @@ function Sidebar({messageCount = 762}) {
             <ArchiveBoxArrowDownIcon className="h-6 w-6 mr-3" />
             Inbox
             {messageCount > 0 && (
-              <span className=" ml-16 bg-red-600 text-white rounded-lg px-3 py-1 text-sm font-semibold">
+              <span className=" ml-14 bg-red-600 text-white rounded-lg px-3 py-1 text-sm font-semibold">
                 {messageCount}
               </span>
             )}
@@ -74,7 +74,12 @@ function Sidebar({messageCount = 762}) {
             )}`}
           >
             <UserGroupIcon className="h-6 w-6 mr-3" />
-            All Users
+            Users
+            {userCount > 0 && (
+              <span className=" ml-14 bg-red-600 text-white rounded-lg px-3 py-1 text-sm font-semibold">
+                {userCount}
+              </span>
+            )}
           </Link>
           <div>
             <button
