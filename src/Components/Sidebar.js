@@ -1,14 +1,27 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeftIcon,
-  Cog6ToothIcon,
-  InboxIcon
+  InboxIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  UserGroupIcon,
+  BuildingOfficeIcon,
+  DocumentTextIcon,
+  ArchiveBoxArrowDownIcon,
+  KeyIcon,
+  ComputerDesktopIcon,
+  ArrowUpCircleIcon,
+  DocumentChartBarIcon,
+  LockClosedIcon
 } from "@heroicons/react/24/solid";
+import logo from '../Assets/Logo.png';
 
-function Sidebar() {
+function Sidebar({messageCount = 762}) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isCreateOpen, setCreateOpen] = useState(false);
+  const [isDocumentOpen, setDocumentOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("Token");
@@ -17,51 +30,139 @@ function Sidebar() {
 
   const isActive = (path) =>
     location.pathname === path
-      ? "bg-slate-800 text-white"
-      : "text-gray-200 hover:bg-slate-700 hover:text-white";
+      ? "bg-pink-800 text-white"
+      : "text-white hover:bg-pink-800 hover:text-white";
 
   return (
-    <div className="h-screen flex flex-col justify-between bg-slate-900 text-white w-64 p-6">
+    <div className="h-screen flex flex-col justify-between bg-rose-900 text-white w-64 p-6">
       <div>
-        <div className="flex items-center justify-center mb-10">
+        <div className="flex items-center justify-center mb-4">
           <img
-            className="h-7 w-auto filter invert"
-            src="https://data.gov.in/_nuxt/img/logo.f9fcba1.svg"
-            alt="Intek"
+            className="flex w-40 h-40"
+            src={logo}
+            alt="DMS"
           />
-          <h2 className="ml-4 mt-1 font-light">DMS Portal</h2>
         </div>
         <nav className="flex flex-col space-y-2">
           <Link
-            to="/"
-            className={`px-3 py-2 rounded-md text-sm font-lg flex items-center ${isActive(
-              "/"
+            to="/dashboard"
+            className={`px-3 py-2 rounded-lg text-sm font-lg flex items-center border ${isActive(
+              "/dashboard"
             )}`}
           >
             <InboxIcon className="h-6 w-6 mr-3" />
-            Upload Document
+            Dashboard
           </Link>
+          <Link
+            to="/inbox"
+            className={`px-3 py-2 rounded-lg text-sm font-lg flex items-center border ${isActive(
+              "/inbox"
+            )}`}
+          >
+            <ArchiveBoxArrowDownIcon className="h-6 w-6 mr-3" />
+            Inbox
+            {messageCount > 0 && (
+              <span className=" ml-16 bg-red-600 text-white rounded-lg px-3 py-1 text-sm font-semibold">
+                {messageCount}
+              </span>
+            )}
+          </Link>
+          <Link
+            to="/users"
+            className={`px-3 py-2 rounded-lg text-sm font-lg flex items-center border ${isActive(
+              "/users"
+            )}`}
+          >
+            <UserGroupIcon className="h-6 w-6 mr-3" />
+            All Users
+          </Link>
+          <div>
+            <button
+              onClick={() => setCreateOpen(!isCreateOpen)}
+              className="w-full px-3 py-2 rounded-lg text-sm font-lg flex items-center justify-between border border-b text-white hover:bg-pink-800 hover:text-white"
+            >
+              <div className="flex items-center">
+                <BuildingOfficeIcon className="h-6 w-6 mr-3" />
+                Create
+              </div>
+              {isCreateOpen ? <ChevronDownIcon className="h-5 w-5" /> : <ChevronRightIcon className="h-5 w-5" />}
+            </button>
+            {isCreateOpen && (
+              <div className="ml-6 flex flex-col space-y-2">
+                <Link
+                  to="/create-branch"
+                  className={`px-3 py-2 rounded-lg text-sm font-lg flex items-center mt-2 border border${isActive(
+                    "/create-branch"
+                  )}`}
+                >
+                  <KeyIcon className="h-6 w-6 mr-3" />
+                  Branch
+                </Link>
+                <Link
+                  to="/create-department"
+                  className={`px-3 py-2 rounded-lg text-sm font-lg flex mb-2 items-center border border${isActive(
+                    "/create-department"
+                  )}`}
+                >
+                  <ComputerDesktopIcon className="h-6 w-6 mr-3" />
+                  Department
+                </Link>
+              </div>
+            )}
+          </div>
+          <div>
+            <button
+              onClick={() => setDocumentOpen(!isDocumentOpen)}
+              className="w-full px-3 py-2 rounded-lg text-sm font-lg flex items-center justify-between border border-b text-white hover:bg-pink-800 hover:text-white"
+            >
+              <div className="flex items-center">
+                <DocumentTextIcon className="h-6 w-6 mr-3" />
+                Document
+              </div>
+              {isDocumentOpen ? <ChevronDownIcon className="h-5 w-5" /> : <ChevronRightIcon className="h-5 w-5" />}
+            </button>
+            {isDocumentOpen && (
+              <div className="ml-6 flex flex-col space-y-2">
+                <Link
+                  to="/create-document"
+                  className={`px-3 py-2 rounded-lg text-sm font-lg flex items-center mt-2 border border${isActive(
+                    "/create-document"
+                  )}`}
+                >
+                  <ArrowUpCircleIcon className="h-6 w-6 mr-3" />
+                  Create
+                </Link>
+                <Link
+                  to="/approve-documents"
+                  className={`px-3 py-2 rounded-lg text-sm font-lg flex items-center border border${isActive(
+                    "/approve-documents"
+                  )}`}
+                >
+                  <LockClosedIcon className="h-6 w-6 mr-3" />
+                  Approve Docs
+                </Link>
+                <Link
+                  to="/all-documents"
+                  className={`px-3 py-2 rounded-lg text-sm font-lg flex items-center border border${isActive(
+                    "/all-documents"
+                  )}`}
+                >
+                  <DocumentChartBarIcon className="h-6 w-6 mr-3" />
+                  All Documents
+                </Link>
+              </div>
+            )}
+          </div>
         </nav>
       </div>
       <div>
-        <nav className="flex flex-col space-y-2">
-          <Link
-            to="/portal/admin/settings"
-            className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${isActive(
-              "/portal/admin/settings"
-            )}`}
-          >
-            <Cog6ToothIcon className="h-6 w-6 mr-3" />
-            Settings
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="text-gray-300 bg-rose-700 border border-gray-600 hover:bg-rose-600 hover:text-white px-3 py-2 rounded-lg text-sm font-medium flex items-center shadow-md transition duration-300 ease-in-out transform hover:-translate-y-1"
-          >
-            <ArrowLeftIcon className="h-6 w-6 mr-2" />
-            Logout
-          </button>
-        </nav>
+        <button
+          onClick={handleLogout}
+          className="w-full px-3 py-2 rounded-lg text-sm font-lg flex items-center border border-b text-white hover:bg-pink-800 hover:text-white"
+        >
+          <ArrowLeftIcon className="h-6 w-6 mr-3" />
+          Logout
+        </button>
       </div>
     </div>
   );
