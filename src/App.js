@@ -1,13 +1,13 @@
 import './App.css';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import FormPage from './Pages/FormPage';
+import Dashboard from './Pages/Dashboard';
 
 function App() {
   return (
     <BrowserRouter>
       <div>
         <Routes>
-          <Route path="/" element={<FormPage />}/>
+          <Route path="/" element={<Dashboard />}/>
         </Routes>
       </div>
     </BrowserRouter>

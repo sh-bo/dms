@@ -40,7 +40,7 @@ function Header({ toggleSidebar }) {
   }, [dropdownOpen]);
 
   return (
-    <header className="bg-rose-900 text-white p-2 flex justify-between items-center shadow-inner relative">
+    <header className="bg-rose-900 text-white p-0.5 flex justify-between items-center shadow-inner relative">
       <div className="flex">
         <button
           onClick={toggleSidebar}
@@ -64,7 +64,7 @@ function Header({ toggleSidebar }) {
             <img src={adminPhoto} alt="Admin" className="h-8 w-8 rounded-full" />
           </div>
           {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+            <div className="absolute right-0 mt-0.5 w-48 bg-white rounded-md shadow-lg z-10">
               <button
                 onClick={handleChangePassword}
                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
