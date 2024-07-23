@@ -45,7 +45,7 @@ function Dashboard() {
       <div className='flex flex-col flex-1'>
         <Header toggleSidebar={toggleSidebar} />
         <div className='flex-1 p-4 min-h-0 overflow-auto'>
-        <h2 className="text-xl mb-4">DASHBOARD</h2>
+        <h2 className="text-xl mb-4 font-semibold">DASHBOARD</h2>
           
           <div className="grid grid-cols-5 gap-4 mb-6">
             <StatBlock title="Total Users" value="1,872" Icon={UsersIcon} />
