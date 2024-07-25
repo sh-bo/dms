@@ -23,12 +23,14 @@ import logo from '../Assets/Logo.png';
 function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, departmentCount = 1692, documentCount = 10540, roleCount = 10, yearCount = 12, categoryCount = 268, typeCount = 128 }) {
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const [isCreateOpen, setCreateOpen] = useState(() => {
     return localStorage.getItem("isCreateOpen") === "true";
   });
-  
-  const [isDocumentOpen, setDocumentOpen] = useState(false);
+
+  const [isDocumentOpen, setDocumentOpen] = useState(() => {
+    return localStorage.getItem("isDocumentOpen") === "true";
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("Token");
@@ -39,6 +41,12 @@ function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, depa
     const newCreateOpenState = !isCreateOpen;
     setCreateOpen(newCreateOpenState);
     localStorage.setItem("isCreateOpen", newCreateOpenState);
+  };
+
+  const handleDocumentToggle = () => {
+    const newDocumentOpenState = !isDocumentOpen;
+    setDocumentOpen(newDocumentOpenState);
+    localStorage.setItem("isDocumentOpen", newDocumentOpenState);
   };
 
   const isActive = (path) =>
@@ -67,11 +75,7 @@ function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, depa
     <div className="h-screen flex flex-col justify-between bg-rose-900 text-white w-52 p-1 transition-all duration-300">
       <div>
         <div className="flex items-center justify-center mb-2">
-          <img
-            className="flex w-32 h-32"
-            src={logo}
-            alt="DMS"
-          />
+          <img className="flex w-32 h-32" src={logo} alt="DMS" />
         </div>
         <nav className="flex flex-col space-y-1">
           <hr className='border-t border-pink-800' />
@@ -112,7 +116,7 @@ function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, depa
           <hr className='border-t border-pink-800' />
           <div>
             <button
-              onClick={() => setDocumentOpen(!isDocumentOpen)}
+              onClick={handleDocumentToggle}
               className="w-full px-3 py-1 rounded-lg text-xs font-lg flex items-center justify-between text-white hover:bg-pink-950 hover:text-white"
             >
               <div className="flex items-center">

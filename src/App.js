@@ -9,6 +9,8 @@ import Roles from './Pages/Roles';
 import Types from './Pages/Types';
 import Years from './Pages/Years';
 import Categories from './Pages/Categories';
+import Documents from './Pages/Documents';
+import Approves from './Pages/Approves';
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
           <Route path="/create-type" element={<Types />}/>
           <Route path="/create-year" element={<Years />}/>
           <Route path="/create-category" element={<Categories />}/>
+          <Route path="/all-documents" element={<Documents />}/>
+          <Route path="/approve-documents" element={<Approves />}/>
         </Routes>
       </div>
     </BrowserRouter>
