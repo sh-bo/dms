@@ -1,7 +1,7 @@
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon, PencilIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
 import React, { useState } from 'react';
 
-const AddBranch = () => {
+const Role = () => {
     const [branches, setBranches] = useState([
       { id: 1, name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', branch: 'Main Branch', department: 'IT', role: 'Developer', isActive: true, createdOn: '2024-01-01', updatedOn: '2024-01-15' },
       { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '234-567-8901', branch: 'Secondary Branch', department: 'HR', role: 'Manager', isActive: false, createdOn: '2024-01-02', updatedOn: '2024-01-16' },
@@ -110,7 +110,7 @@ const AddBranch = () => {
 
   return (
     <div className="p-1">
-      <h1 className="text-xl mb-4 font-semibold">USERS</h1>
+      <h1 className="text-xl mb-4 font-semibold">ROLES</h1>
       <div className="bg-white p-3 rounded-lg shadow-sm">
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
           <div className="grid grid-cols-3 gap-4">
@@ -319,4 +319,4 @@ const AddBranch = () => {
   );
 };
 
-export default AddBranch;
+export default Role;

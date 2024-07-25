@@ -1,10 +1,9 @@
 import React, {useState} from 'react'
-import Sidebar from '../Components/Sidebar'
-import Header from '../Components/Header'
-import Employee from '../Data/Employee';
+import Sidebar from '../Components/Sidebar';
+import Header from '../Components/Header';
+import Department from '../Data/Department';
 
-function Users() {
-
+function Departments() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const toggleSidebar = () => {
@@ -16,11 +15,11 @@ function Users() {
             <div className='flex flex-col flex-1'>
                 <Header toggleSidebar={toggleSidebar} />
                 <div className='flex-1 p-4 min-h-0 overflow-auto'>
-                    <Employee/>
+                    <Department/>
                 </div>
             </div>
         </div>
     )
 }
 
-export default Users
+export default Departments

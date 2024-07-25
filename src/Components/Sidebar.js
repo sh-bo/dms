@@ -20,15 +20,25 @@ import {
 } from "@heroicons/react/24/solid";
 import logo from '../Assets/Logo.png';
 
-function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, departmentCount = 1692, documentCount = 10540, roleCount = 10, yearCount = 12, categoryCount = 268, typeCount  = 128 }) {
+function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, departmentCount = 1692, documentCount = 10540, roleCount = 10, yearCount = 12, categoryCount = 268, typeCount = 128 }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isCreateOpen, setCreateOpen] = useState(false);
+  
+  const [isCreateOpen, setCreateOpen] = useState(() => {
+    return localStorage.getItem("isCreateOpen") === "true";
+  });
+  
   const [isDocumentOpen, setDocumentOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem("Token");
     navigate("/auth");
+  };
+
+  const handleCreateToggle = () => {
+    const newCreateOpenState = !isCreateOpen;
+    setCreateOpen(newCreateOpenState);
+    localStorage.setItem("isCreateOpen", newCreateOpenState);
   };
 
   const isActive = (path) =>
@@ -73,7 +83,7 @@ function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, depa
           <hr className='border-t border-pink-800' />
           <div>
             <button
-              onClick={() => setCreateOpen(!isCreateOpen)}
+              onClick={handleCreateToggle}
               className="w-full px-3 py-1 rounded-lg text-xs flex items-center justify-between text-white hover:bg-pink-950 hover:text-white"
             >
               <div className="flex items-center">

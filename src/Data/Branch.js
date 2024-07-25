@@ -1,73 +1,74 @@
-import { ArrowLeftIcon, ArrowRightIcon, MagnifyingGlassIcon, PencilIcon, PlusIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, PlusCircleIcon, TrashIcon } from '@heroicons/react/24/solid';
 import React, { useState } from 'react';
 
 const Branch = () => {
   const [branches, setBranches] = useState([
-    { id: 1, branchName: 'Main Branch', address: '123 Main St', isActive: true },
-    { id: 2, branchName: 'Secondary Branch', address: '456 Elm St', isActive: false },
-    { id: 3, branchName: 'East Branch', address: '789 Oak St', isActive: true },
-    { id: 4, branchName: 'West Branch', address: '101 Pine St', isActive: false },
-    { id: 5, branchName: 'North Branch', address: '202 Maple St', isActive: true },
-    { id: 6, branchName: 'Main Branch', address: '123 Main St', isActive: true },
-    { id: 7, branchName: 'Secondary Branch', address: '456 Elm St', isActive: false },
-    { id: 8, branchName: 'East Branch', address: '789 Oak St', isActive: true },
-    { id: 9, branchName: 'West Branch', address: '101 Pine St', isActive: false },
-    { id: 10, branchName: 'North Branch', address: '202 Maple St', isActive: true },
+    { id: 1, name: 'John Doe', address: '123 Main St', createdOn: '2024-01-01', updatedOn: '2024-01-15' },
+    { id: 2, name: 'Jane Smith', address: '456 Elm St', createdOn: '2024-01-02', updatedOn: '2024-01-16' },
+    { id: 3, name: 'Alice Johnson', address: '789 Oak St', createdOn: '2024-01-03', updatedOn: '2024-01-17' },
+    { id: 4, name: 'Bob Wilson', address: '101 Pine St', createdOn: '2024-01-04', updatedOn: '2024-01-18' },
+    { id: 5, name: 'Carol Martinez', address: '202 Cedar St', createdOn: '2024-01-05', updatedOn: '2024-01-19' }
   ]);
 
-  const [branchName, setBranchName] = useState('');
-  const [address, setAddress] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    address: '',
+  });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [branchToToggle, setBranchToToggle] = useState(null);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleAddBranch = () => {
-    if (branchName && address) {
-      const newBranch = { id: Date.now(), branchName, address, isActive: true };
+    if (Object.values(formData).every(value => value)) {
+      const newBranch = {
+        id: Date.now(),
+        ...formData,
+        createdOn: new Date().toISOString().split('T')[0],
+        updatedOn: new Date().toISOString().split('T')[0],
+      };
       setBranches([...branches, newBranch]);
-      setBranchName('');
-      setAddress('');
+      setFormData({
+        name: '',
+        address: '',
+      });
     }
   };
 
   const handleEditBranch = (index) => {
     setEditingIndex(index);
-    setBranchName(branches[index].branchName);
-    setAddress(branches[index].address);
+    setFormData(branches[index]);
   };
 
   const handleSaveEdit = () => {
-    if (branchName && address) {
+    if (Object.values(formData).every(value => value)) {
       const updatedBranches = branches.map((branch, index) =>
-        index === editingIndex ? { ...branch, branchName, address } : branch
+        index === editingIndex ? { ...branch, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : branch
       );
       setBranches(updatedBranches);
-      setBranchName('');
-      setAddress('');
+      setFormData({
+        name: '',
+        address: '',
+      });
       setEditingIndex(null);
     }
   };
 
-  const handleToggleActive = (branch) => {
-    setBranchToToggle(branch);
-    setModalVisible(true);
-  };
-
-  const confirmToggleActive = () => {
-    const updatedBranches = branches.map(branch =>
-      branch.id === branchToToggle.id ? { ...branch, isActive: !branch.isActive } : branch
-    );
+  const handleDeleteBranch = (index) => {
+    const updatedBranches = branches.filter((_, i) => i !== index);
     setBranches(updatedBranches);
-    setModalVisible(false);
-    setBranchToToggle(null);
   };
 
   const filteredBranches = branches.filter(branch =>
-    branch.branchName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    branch.address.toLowerCase().includes(searchTerm.toLowerCase())
+    Object.values(branch).some(value => 
+      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    )
   );
 
   const totalItems = filteredBranches.length;
@@ -76,142 +77,130 @@ const Branch = () => {
 
   return (
     <div className="p-1">
-      <h1 className="text-xl mb-4 font-semibold">ADD BRANCHES</h1>
+      <h1 className="text-xl mb-4 font-semibold">BRANCH</h1>
       <div className="bg-white p-3 rounded-lg shadow-sm">
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <input
               type="text"
-              placeholder="Branch Name"
-              value={branchName}
-              onChange={(e) => setBranchName(e.target.value)}
-              className="p-2 border rounded-md outline-none flex-grow"
+              placeholder="Name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
             />
             <input
               type="text"
               placeholder="Address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="p-2 border rounded-md outline-none flex-grow"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
             />
+          </div>
+          <div className="mt-3 flex justify-start">
             {editingIndex === null ? (
-              <button onClick={handleAddBranch} className="bg-blue-500 text-white rounded-md p-2 flex items-center justify-center">
-                <PlusIcon className="h-5 w-5 mr-2" /> Add Branch
+              <button onClick={handleAddBranch} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
+                <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Branch
               </button>
             ) : (
-              <button onClick={handleSaveEdit} className="bg-green-500 text-white rounded-md p-2 flex items-center justify-center">
-                Save
+              <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
+                <CheckCircleIcon className="h-5 w-5 mr-1" /> Save
               </button>
             )}
           </div>
         </div>
 
-        <div className="mb-4 bg-slate-100 p-4 rounded-lg">
-          <div className="flex justify-between">
-            <div className="flex items-center bg-blue-500 rounded-lg">
-              <label htmlFor="itemsPerPage" className="mr-2 ml-2 text-white text-sm">Show:</label>
-              <select
-                id="itemsPerPage"
-                className="border rounded-r-lg p-1.5 outline-none"
-                value={itemsPerPage}
-                onChange={(e) => setItemsPerPage(Number(e.target.value))}
-              >
-                {[5, 10, 15, 20].map(num => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="border rounded-l-md p-1 outline-none"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <MagnifyingGlassIcon className="text-white bg-blue-500 rounded-r-lg h-8 w-8 border p-1.5" />
-            </div>
+        <div className="mb-4 bg-slate-100 p-4 rounded-lg flex justify-between items-center">
+          <div className="flex items-center bg-blue-500 rounded-lg">
+            <label htmlFor="itemsPerPage" className="mr-2 ml-2 text-white text-sm">Show:</label>
+            <select
+              id="itemsPerPage"
+              className="border rounded-r-lg p-1.5 outline-none"
+              value={itemsPerPage}
+              onChange={(e) => setItemsPerPage(Number(e.target.value))}
+            >
+              {[5, 10, 15, 20].map(num => (
+                <option key={num} value={num}>{num}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center">
+            <input
+              type="text"
+              placeholder="Search..."
+              className="border rounded-l-md p-1 outline-none"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <MagnifyingGlassIcon className="text-white bg-blue-500 rounded-r-lg h-8 w-8 border p-1.5" />
           </div>
         </div>
 
-        <table className="w-full border-collapse border">
-          <thead>
-            <tr className="bg-slate-100">
-              <th className="border p-2 text-left">SR.</th>
-              <th className="border p-2 text-left">Branch Name</th>
-              <th className="border p-2 text-left">Address</th>
-              <th className="border p-2 text-left">Status</th>
-              <th className="border p-2 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedBranches.map((branch, index) => (
-              <tr key={branch.id}>
-                <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                <td className="border p-2">{branch.branchName}</td>
-                <td className="border p-2">{branch.address}</td>
-                <td className="border p-2">{branch.isActive ? 'Active' : 'Inactive'}</td>
-                <td className="border p-2">
-                  <div className="flex items-center space-x-2">
-                    <button onClick={() => handleEditBranch(index)}>
-                      <PencilIcon className="h-5 w-5 text-blue-500" />
-                    </button>
-                    <button
-                      onClick={() => handleToggleActive(branch)}
-                      className={`px-2 py-1 rounded-md text-white ${branch.isActive ? 'bg-red-500' : 'bg-green-500'}`}
-                    >
-                      {branch.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                  </div>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border">
+            <thead>
+              <tr className="bg-slate-100">
+                <th className="border p-2 text-left">SR.</th>
+                <th className="border p-2 text-left">Name</th>
+                <th className="border p-2 text-left">Address</th>
+                <th className="border p-2 text-left">Created On</th>
+                <th className="border p-2 text-left">Updated On</th>
+                <th className="border p-2 text-left">Edit</th>
+                <th className="border p-2 text-left">Delete</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginatedBranches.map((branch, index) => (
+                <tr key={branch.id}>
+                  <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                  <td className="border p-2">{branch.name}</td>
+                  <td className="border p-2">{branch.address}</td>
+                  <td className="border p-2">{branch.createdOn}</td>
+                  <td className="border p-2">{branch.updatedOn}</td>
+                  <td className="border p-2">
+                    <button onClick={() => handleEditBranch(index)}>
+                      <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
+                    </button>
+                  </td>
+                  <td className="border p-2">
+                    <button onClick={() => handleDeleteBranch(index)}>
+                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        <div className="flex justify-start items-center mt-4">
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
-            className="bg-slate-200 px-3 py-1 rounded mr-3"
-          >
-            <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
-            Previous
-          </button>
-          <span className="text-blue-500 font-semibold">Page {currentPage}</span>
-          <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="bg-slate-200 px-3 py-1 rounded ml-3"
-          >
-            Next
-            <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
-          </button>
+        <div className="flex justify-between items-center mt-4">
+          <div>
+            <span className="text-sm text-gray-700">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
+            </span>
+          </div>
+          <div className="flex items-center">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="bg-slate-200 px-3 py-1 rounded mr-3"
+            >
+              <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
+              Previous
+            </button>
+            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="bg-slate-200 px-3 py-1 rounded ml-3"
+            >
+              Next
+              <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
+            </button>
+          </div>
         </div>
       </div>
-
-      {modalVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-md">
-            <h3 className="text-xl mb-4">Confirm Toggle Status</h3>
-            <p>Are you sure you want to {branchToToggle?.isActive ? 'deactivate' : 'activate'} the status of the branch "{branchToToggle?.branchName}"?</p>
-            <div className="mt-4 flex justify-end gap-4">
-              <button
-                onClick={() => setModalVisible(false)}
-                className="p-2 bg-gray-400 text-white rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmToggleActive}
-                className="p-2 bg-blue-500 text-white rounded-md"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
