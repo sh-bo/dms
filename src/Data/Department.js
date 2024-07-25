@@ -169,9 +169,9 @@ import {
                   <th className="border p-2 text-left">Branch</th>
                   <th className="border p-2 text-left">Created On</th>
                   <th className="border p-2 text-left">Updated On</th>
-                  <th className="border p-2 text-left">Status</th>
                   <th className="border p-2 text-left">Edit</th>
                   <th className="border p-2 text-left">Delete</th>
+                  <th className="border p-2 text-left">Access</th>
                 </tr>
               </thead>
               <tbody>
@@ -183,6 +183,16 @@ import {
                     <td className="border p-2">{branch.createdOn}</td>
                     <td className="border p-2">{branch.updatedOn}</td>
                     <td className="border p-2">
+                      <button onClick={() => handleEditBranch(index)}>
+                        <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
+                      </button>
+                    </td>
+                    <td className="border p-2">
+                      <button onClick={() => handleDeleteBranch(index)}>
+                        <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
+                      </button>
+                    </td>
+                    <td className="border p-2">
                       <button
                         onClick={() => handleToggleActive(index)}
                         className={`p-1 rounded-full ${branch.isActive ? 'bg-green-500' : 'bg-red-500'}`}
@@ -192,16 +202,6 @@ import {
                         ) : (
                           <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
                         )}
-                      </button>
-                    </td>
-                    <td className="border p-2">
-                      <button onClick={() => handleEditBranch(index)}>
-                        <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
-                      </button>
-                    </td>
-                    <td className="border p-2">
-                      <button onClick={() => handleDeleteBranch(index)}>
-                        <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
                       </button>
                     </td>
                   </tr>

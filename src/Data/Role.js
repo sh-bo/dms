@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon, PencilIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon, PencilIcon, PlusCircleIcon, TrashIcon } from '@heroicons/react/24/solid';
 import React, { useState } from 'react';
 
 const Role = () => {
@@ -66,6 +66,11 @@ const Role = () => {
     setFormData(branches[index]);
   };
 
+  const handleDeleteBranch = (index) => {
+    const updatedBranches = branches.filter((_, i) => i !== index);
+    setBranches(updatedBranches);
+  };
+
   const handleSaveEdit = () => {
     if (Object.values(formData).every(value => value)) {
       const updatedBranches = branches.map((branch, index) =>
@@ -122,60 +127,11 @@ const Role = () => {
               onChange={handleInputChange}
               className="p-2 border rounded-md outline-none"
             />
-            <input
-              type="email"
-              placeholder="Email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            />
-            <input
-              type="tel"
-              placeholder="Phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            />
-            <select
-              name="branch"
-              value={formData.branch}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Branch</option>
-              {branchOptions.map((branch, index) => (
-                <option key={index} value={branch}>{branch}</option>
-              ))}
-            </select>
-            <select
-              name="department"
-              value={formData.department}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Department</option>
-              {departmentOptions.map((department, index) => (
-                <option key={index} value={department}>{department}</option>
-              ))}
-            </select>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Role</option>
-              {roleOptions.map((role, index) => (
-                <option key={index} value={role}>{role}</option>
-              ))}
-            </select>
           </div>
           <div className="mt-3 flex justify-start">
             {editingIndex === null ? (
               <button onClick={handleAddBranch} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <PlusCircleIcon className="h-5 w-5 mr-1" /> Add User
+                <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Role
               </button>
             ) : (
               <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
@@ -217,15 +173,11 @@ const Role = () => {
               <tr className="bg-slate-100">
                 <th className="border p-2 text-left">SR.</th>
                 <th className="border p-2 text-left">Name</th>
-                <th className="border p-2 text-left">Email</th>
-                <th className="border p-2 text-left">Mobile</th>
-                <th className="border p-2 text-left">Branch</th>
-                <th className="border p-2 text-left">Department</th>
-                <th className="border p-2 text-left">Role</th>
-                <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
+                <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Edit</th>
+                <th className="border p-2 text-left">Delete</th>
                 <th className="border p-2 text-left">Access</th>
               </tr>
             </thead>
@@ -234,17 +186,17 @@ const Role = () => {
                 <tr key={branch.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td className="border p-2">{branch.name}</td>
-                  <td className="border p-2">{branch.email}</td>
-                  <td className="border p-2">{branch.phone}</td>
-                  <td className="border p-2">{branch.branch}</td>
-                  <td className="border p-2">{branch.department}</td>
-                  <td className="border p-2">{branch.role}</td>
-                  <td className="border p-2">{branch.isActive ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">{branch.createdOn}</td>
                   <td className="border p-2">{branch.updatedOn}</td>
+                  <td className="border p-2">{branch.isActive ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                       <button onClick={() => handleEditBranch(index)}>
                         <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
+                    </button>
+                  </td>
+                  <td className="border p-2">
+                    <button onClick={() => handleDeleteBranch(index)}>
+                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
