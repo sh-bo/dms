@@ -29,7 +29,7 @@ function Dashboard() {
   
   function StatBlock({ title, value, Icon }) {
     return (
-        <div className="bg-white p-3 rounded-lg shadow flex items-center justify-between">
+        <div className="bg-white p-3 rounded-r-lg shadow flex items-center justify-between border-l-4 border-rose-800">
         <div>
           <h3 className="text-md font-semibold text-gray-700">{title}</h3>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
