@@ -136,7 +136,7 @@ const Category = () => {
             <thead>
               <tr className="bg-slate-100">
                 <th className="border p-2 text-left">Sr</th>
-                <th className="border p-2 text-left">Name</th>
+                <th className="border p-2 text-left">Category</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
                 <th className="border p-2 text-left">Edit</th>

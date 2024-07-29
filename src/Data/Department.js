@@ -165,7 +165,7 @@ import {
               <thead>
                 <tr className="bg-slate-100">
                   <th className="border p-2 text-left">SR.</th>
-                  <th className="border p-2 text-left">Name</th>
+                  <th className="border p-2 text-left">Department</th>
                   <th className="border p-2 text-left">Branch</th>
                   <th className="border p-2 text-left">Created On</th>
                   <th className="border p-2 text-left">Updated On</th>
