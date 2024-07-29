@@ -1,181 +1,177 @@
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon, PencilIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusCircleIcon, CheckCircleIcon, EyeIcon } from '@heroicons/react/24/solid';
 import React, { useState } from 'react';
 
 const Document = () => {
-    const [branches, setBranches] = useState([
-      { id: 1, name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', branch: 'Main Branch', department: 'IT', role: 'Developer', isActive: true, createdOn: '2024-01-01', updatedOn: '2024-01-15' },
-      { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '234-567-8901', branch: 'Secondary Branch', department: 'HR', role: 'Manager', isActive: false, createdOn: '2024-01-02', updatedOn: '2024-01-16' },
-      { id: 3, name: 'Alice Johnson', email: 'alice@example.com', phone: '345-678-9012', branch: 'East Branch', department: 'Finance', role: 'Accountant', isActive: true, createdOn: '2024-01-03', updatedOn: '2024-01-17' },
-      { id: 4, name: 'Bob Wilson', email: 'bob@example.com', phone: '456-789-0123', branch: 'West Branch', department: 'Sales', role: 'Sales Representative', isActive: true, createdOn: '2024-01-04', updatedOn: '2024-01-18' },
-      { id: 5, name: 'Carol Martinez', email: 'carol@example.com', phone: '567-890-1234', branch: 'North Branch', department: 'Marketing', role: 'Marketing Specialist', isActive: false, createdOn: '2024-01-05', updatedOn: '2024-01-19' },
-      { id: 6, name: 'David Lee', email: 'david@example.com', phone: '678-901-2345', branch: 'South Branch', department: 'Operations', role: 'Operations Manager', isActive: true, createdOn: '2024-01-06', updatedOn: '2024-01-20' },
-      { id: 7, name: 'Eva Brown', email: 'eva@example.com', phone: '789-012-3456', branch: 'Main Branch', department: 'Customer Service', role: 'Support Specialist', isActive: true, createdOn: '2024-01-07', updatedOn: '2024-01-21' },
-      { id: 8, name: 'Frank Garcia', email: 'frank@example.com', phone: '890-123-4567', branch: 'Secondary Branch', department: 'IT', role: 'System Administrator', isActive: false, createdOn: '2024-01-08', updatedOn: '2024-01-22' },
-      { id: 9, name: 'Grace Taylor', email: 'grace@example.com', phone: '901-234-5678', branch: 'East Branch', department: 'HR', role: 'Recruiter', isActive: true, createdOn: '2024-01-09', updatedOn: '2024-01-23' },
-      { id: 10, name: 'Henry Wilson', email: 'henry@example.com', phone: '012-345-6789', branch: 'West Branch', department: 'Legal', role: 'Legal Counsel', isActive: true, createdOn: '2024-01-10', updatedOn: '2024-01-24' }
+    const [documents, setDocuments] = useState([
+      { id: 1, title: 'Annual Report', fileNo: 'DOC001', subject: 'Finance', version: '1.0', createdOn: '2024-01-01', updatedOn: '2024-01-15', category: 'Report', year: '2024', type: 'PDF', employeeID: 'EMP001', employeeDepartment: 'Finance', employeeBranch: 'Main Branch', approvalStatus: 'Approved' },
+      { id: 2, title: 'Marketing Plan', fileNo: 'DOC002', subject: 'Marketing', version: '2.1', createdOn: '2024-01-02', updatedOn: '2024-01-16', category: 'Plan', year: '2024', type: 'DOCX', employeeID: 'EMP002', employeeDepartment: 'Marketing', employeeBranch: 'East Branch', approvalStatus: 'Pending' },
+      // Add more dummy data as needed
     ]);
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    branch: '',
-    department: '',
-    role: '',
+    title: '',
+    subject: '',
+    category: '',
+    year: '',
+    type: '',
+    files: [],
   });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [branchToToggle, setBranchToToggle] = useState(null);
 
-  const [branchOptions] = useState(['Main Branch', 'Secondary Branch', 'East Branch', 'West Branch', 'North Branch', 'South Branch']);
-  const [departmentOptions] = useState(['IT', 'HR', 'Finance', 'Sales', 'Marketing', 'Operations', 'Customer Service', 'Legal']);
-  const [roleOptions] = useState(['Developer', 'Manager', 'Accountant', 'Sales Representative', 'Marketing Specialist', 'Operations Manager', 'Support Specialist', 'System Administrator', 'Recruiter', 'Legal Counsel']);
+  const [categoryOptions] = useState(['Report', 'Plan', 'Policy', 'Procedure', 'Template']);
+  const [yearOptions] = useState(['2022', '2023', '2024', '2025']);
+  const [typeOptions] = useState(['PDF', 'DOCX', 'XLSX', 'PPT']);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAddBranch = () => {
+  const handleFileChange = (e) => {
+    setFormData({ ...formData, files: Array.from(e.target.files) });
+  };
+
+  const handleAddDocument = () => {
     if (Object.values(formData).every(value => value)) {
-      const newBranch = {
+      const newDocument = {
         id: Date.now(),
         ...formData,
-        isActive: true,
+        fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        version: '1.0',
         createdOn: new Date().toISOString().split('T')[0],
         updatedOn: new Date().toISOString().split('T')[0],
+        employeeID: 'EMP001', // This would typically come from the logged-in user
+        employeeDepartment: 'IT', // This would typically come from the logged-in user
+        employeeBranch: 'Main Branch', // This would typically come from the logged-in user
+        approvalStatus: 'Pending',
       };
-      setBranches([...branches, newBranch]);
+      setDocuments([...documents, newDocument]);
       setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        branch: '',
-        department: '',
-        role: '',
+        title: '',
+        subject: '',
+        category: '',
+        year: '',
+        type: '',
+        files: [],
       });
     }
   };
 
-  const handleEditBranch = (index) => {
+  const handleEditDocument = (index) => {
     setEditingIndex(index);
-    setFormData(branches[index]);
+    const doc = documents[index];
+    setFormData({
+      title: doc.title,
+      subject: doc.subject,
+      category: doc.category,
+      year: doc.year,
+      type: doc.type,
+      files: [], // We can't populate this as we don't store the actual files
+    });
   };
 
   const handleSaveEdit = () => {
     if (Object.values(formData).every(value => value)) {
-      const updatedBranches = branches.map((branch, index) =>
-        index === editingIndex ? { ...branch, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : branch
+      const updatedDocuments = documents.map((doc, index) =>
+        index === editingIndex ? { ...doc, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : doc
       );
-      setBranches(updatedBranches);
+      setDocuments(updatedDocuments);
       setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        branch: '',
-        department: '',
-        role: '',
+        title: '',
+        subject: '',
+        category: '',
+        year: '',
+        type: '',
+        files: [],
       });
       setEditingIndex(null);
     }
   };
 
-  const handleToggleActive = (branch) => {
-    setBranchToToggle(branch);
-    setModalVisible(true);
+  const handleDeleteDocument = (id) => {
+    setDocuments(documents.filter(doc => doc.id !== id));
   };
 
-  const confirmToggleActive = () => {
-    const updatedBranches = branches.map(branch =>
-      branch.id === branchToToggle.id ? { ...branch, isActive: !branch.isActive, updatedOn: new Date().toISOString().split('T')[0] } : branch
-    );
-    setBranches(updatedBranches);
-    setModalVisible(false);
-    setBranchToToggle(null);
-  };
-
-  const filteredBranches = branches.filter(branch =>
-    Object.values(branch).some(value => 
+  const filteredDocuments = documents.filter(doc =>
+    Object.values(doc).some(value => 
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
-  const totalItems = filteredBranches.length;
+  const totalItems = filteredDocuments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedBranches = filteredBranches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-1">
-      <h1 className="text-xl mb-4 font-semibold">USERS</h1>
+      <h1 className="text-xl mb-4 font-semibold">DOCUMENT MANAGEMENT</h1>
       <div className="bg-white p-3 rounded-lg shadow-sm">
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
           <div className="grid grid-cols-3 gap-4">
             <input
               type="text"
-              placeholder="Name"
-              name="name"
-              value={formData.name}
+              placeholder="Title"
+              name="title"
+              value={formData.title}
               onChange={handleInputChange}
               className="p-2 border rounded-md outline-none"
             />
             <input
-              type="email"
-              placeholder="Email"
-              name="email"
-              value={formData.email}
+              type="text"
+              placeholder="Subject"
+              name="subject"
+              value={formData.subject}
               onChange={handleInputChange}
               className="p-2 border rounded-md outline-none"
             />
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
+            >
+              <option value="">Select Category</option>
+              {categoryOptions.map((category, index) => (
+                <option key={index} value={category}>{category}</option>
+              ))}
+            </select>
+            <select
+              name="year"
+              value={formData.year}
+              onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
+            >
+              <option value="">Select Year</option>
+              {yearOptions.map((year, index) => (
+                <option key={index} value={year}>{year}</option>
+              ))}
+            </select>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
+            >
+              <option value="">Select Type</option>
+              {typeOptions.map((type, index) => (
+                <option key={index} value={type}>{type}</option>
+              ))}
+            </select>
             <input
-              type="tel"
-              placeholder="Phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
+              type="file"
+              multiple
+              onChange={handleFileChange}
               className="p-2 border rounded-md outline-none"
             />
-            <select
-              name="branch"
-              value={formData.branch}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Branch</option>
-              {branchOptions.map((branch, index) => (
-                <option key={index} value={branch}>{branch}</option>
-              ))}
-            </select>
-            <select
-              name="department"
-              value={formData.department}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Department</option>
-              {departmentOptions.map((department, index) => (
-                <option key={index} value={department}>{department}</option>
-              ))}
-            </select>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Role</option>
-              {roleOptions.map((role, index) => (
-                <option key={index} value={role}>{role}</option>
-              ))}
-            </select>
           </div>
           <div className="mt-3 flex justify-start">
             {editingIndex === null ? (
-              <button onClick={handleAddBranch} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <PlusCircleIcon className="h-5 w-5 mr-1" /> Add User
+              <button onClick={handleAddDocument} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
+                <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Document
               </button>
             ) : (
               <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
@@ -216,48 +212,56 @@ const Document = () => {
             <thead>
               <tr className="bg-slate-100">
                 <th className="border p-2 text-left">SR.</th>
-                <th className="border p-2 text-left">Name</th>
-                <th className="border p-2 text-left">Email</th>
-                <th className="border p-2 text-left">Mobile</th>
-                <th className="border p-2 text-left">Branch</th>
-                <th className="border p-2 text-left">Department</th>
-                <th className="border p-2 text-left">Role</th>
-                <th className="border p-2 text-left">Status</th>
+                <th className="border p-2 text-left">Title</th>
+                <th className="border p-2 text-left">File No</th>
+                <th className="border p-2 text-left">Subject</th>
+                <th className="border p-2 text-left">Version</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
+                <th className="border p-2 text-left">Category</th>
+                <th className="border p-2 text-left">Year</th>
+                <th className="border p-2 text-left">Type</th>
+                <th className="border p-2 text-left">EID</th>
+                <th className="border p-2 text-left">Department</th>
+                <th className="border p-2 text-left">Branch</th>
+                <th className="border p-2 text-left">Approval</th>
                 <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Access</th>
+                <th className="border p-2 text-left">Delete</th>
+                <th className="border p-2 text-left">View</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedBranches.map((branch, index) => (
-                <tr key={branch.id}>
+              {paginatedDocuments.map((doc, index) => (
+                <tr key={doc.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td className="border p-2">{branch.name}</td>
-                  <td className="border p-2">{branch.email}</td>
-                  <td className="border p-2">{branch.phone}</td>
-                  <td className="border p-2">{branch.branch}</td>
-                  <td className="border p-2">{branch.department}</td>
-                  <td className="border p-2">{branch.role}</td>
-                  <td className="border p-2">{branch.isActive ? 'Active' : 'Inactive'}</td>
-                  <td className="border p-2">{branch.createdOn}</td>
-                  <td className="border p-2">{branch.updatedOn}</td>
+                  <td className="border p-2">{doc.title}</td>
+                  <td className="border p-2">{doc.fileNo}</td>
+                  <td className="border p-2">{doc.subject}</td>
+                  <td className="border p-2">{doc.version}</td>
+                  <td className="border p-2">{doc.createdOn}</td>
+                  <td className="border p-2">{doc.updatedOn}</td>
+                  <td className="border p-2">{doc.category}</td>
+                  <td className="border p-2">{doc.year}</td>
+                  <td className="border p-2">{doc.type}</td>
+                  <td className="border p-2">{doc.employeeID}</td>
+                  <td className="border p-2">{doc.employeeDepartment}</td>
+                  <td className="border p-2">{doc.employeeBranch}</td>
+                  <td className="border p-2">{doc.approvalStatus}</td>
                   <td className="border p-2">
-                      <button onClick={() => handleEditBranch(index)}>
-                        <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
+                    <button onClick={() => handleEditDocument(index)}>
+                      <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
-                  <button
-                    onClick={() => handleToggleActive(branch)}
-                    className={`p-1 rounded-full ${branch.isActive ? 'bg-green-500' : 'bg-red-500'}`}
-                  >
-                    {branch.isActive ? (
-                      <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
-                    ) : (
-                      <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
-                    )}
-                  </button>
+                    <button onClick={() => handleDeleteDocument(doc.id)}>
+                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1 ml-2" />
+                    </button>
+                  </td>
+                  <td className="border p-2">
+                  <button>
+                      <EyeIcon className="h-6 w-6 bg-green-400 rounded-xl p-1 text-white">
+                      </EyeIcon>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -292,29 +296,6 @@ const Document = () => {
           </div>
         </div>
       </div>
-
-      {modalVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-md">
-            <h3 className="text-xl mb-4">Confirm Toggle Status</h3>
-            <p>Are you sure you want to {branchToToggle?.isActive ? 'deactivate' : 'activate'} the status of the user "{branchToToggle?.name}"?</p>
-            <div className="mt-4 flex justify-end gap-4">
-              <button
-                onClick={() => setModalVisible(false)}
-                className="p-2 bg-gray-400 text-white rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmToggleActive}
-                className="p-2 bg-blue-500 text-white rounded-md"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

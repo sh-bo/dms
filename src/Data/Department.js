@@ -97,7 +97,7 @@ import {
   
     return (
       <div className="p-1">
-        <h1 className="text-xl mb-4 font-semibold">DEPARTMENT</h1>
+        <h1 className="text-xl mb-4 font-semibold">DEPARTMENTS</h1>
         <div className="bg-white p-3 rounded-lg shadow-sm">
           <div className="mb-4 bg-slate-100 p-4 rounded-lg">
             <div className="grid grid-cols-2 gap-4">
