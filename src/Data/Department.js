@@ -33,7 +33,7 @@ const Department = () => {
   const fetchBranches = async () => {
     try {
       const response = await axios.get('http://localhost:8080/branchmaster/findAll');
-      setBranches(response.data.map(branch => branch.id)); // Extracting only the branch names
+      setBranches(response.data.map(branch => branch.name)); // Extracting only the branch names
     } catch (error) {
       console.error('Error fetching branches:', error);
     }
