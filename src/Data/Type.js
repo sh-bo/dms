@@ -1,70 +1,82 @@
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+
+const API_URL = 'http://localhost:8081/TypeMaster';
 
 const Type = () => {
-  const [types, setTypes] = useState([
-    { id: 1, name: 'Type A', createdOn: '2024-01-01', updatedOn: '2024-01-15' },
-    { id: 2, name: 'Type B', createdOn: '2024-01-02', updatedOn: '2024-01-16' },
-    { id: 3, name: 'Type C', createdOn: '2024-01-03', updatedOn: '2024-01-17' },
-    { id: 4, name: 'Type D', createdOn: '2024-01-04', updatedOn: '2024-01-18' },
-    { id: 5, name: 'Type E', createdOn: '2024-01-05', updatedOn: '2024-01-19' },
-    { id: 6, name: 'Type F', createdOn: '2024-01-06', updatedOn: '2024-01-20' },
-    { id: 7, name: 'Type G', createdOn: '2024-01-07', updatedOn: '2024-01-21' },
-    { id: 8, name: 'Type H', createdOn: '2024-01-08', updatedOn: '2024-01-22' },
-    { id: 9, name: 'Type I', createdOn: '2024-01-09', updatedOn: '2024-01-23' },
-    { id: 10, name: 'Type J', createdOn: '2024-01-10', updatedOn: '2024-01-24' }
-  ]);
-
-  const [formData, setFormData] = useState({
-    name: '',
-  });
-
+  const [types, setTypes] = useState([]);
+  const [formData, setFormData] = useState({ name: '', });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    // Fetch types from the server
+    const fetchTypes = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/findAll`);
+        setTypes(response.data);
+      } catch (error) {
+        console.error('Error fetching typess:', error);
+      }
+    };
+    fetchTypes();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAddType = () => {
+  const handleAddType = async () => {
     if (Object.values(formData).every(value => value)) {
       const newType = {
-        id: Date.now(),
-        ...formData,
-        createdOn: new Date().toISOString().split('T')[0],
-        updatedOn: new Date().toISOString().split('T')[0],
+        type: formData.type,
       };
-      setTypes([...types, newType]);
-      setFormData({
-        name: '',
-      });
+
+      try {
+        const response = await axios.post(`${API_URL}/save`, newType);
+        setTypes([...types, response.data]);
+        setFormData({ type: '' });
+      } catch (error) {
+        console.error('Error adding role:', error);
+      }
     }
   };
 
   const handleEditType = (index) => {
     setEditingIndex(index);
-    setFormData(types[index]);
+    setFormData({ type: types[index].type });
+  };
+
+
+  const handleSaveEdit = async () => {
+    if (formData.type) {
+      try {
+        const updatedType = {
+          ...types[editingIndex],
+          type: formData.type,
+          updatedOn: new Date().toISOString(),
+        };
+        const response = await axios.put(`${API_URL}/update/${updatedType.id}`, updatedType);
+        const updatedTypes = types.map((type, index) =>
+          index === editingIndex ? response.data : type
+        );
+        setTypes(updatedTypes);
+        setFormData({ type: '' });
+        setEditingIndex(null);
+      } catch (error) {
+        console.error('Error updating type:', error.response ? error.response.data : error.message);
+      }
+    }
   };
 
   const handleDeleteType = (index) => {
     const updatedTypes = types.filter((_, i) => i !== index);
     setTypes(updatedTypes);
-  };
-
-  const handleSaveEdit = () => {
-    if (Object.values(formData).every(value => value)) {
-      const updatedTypes = types.map((type, index) =>
-        index === editingIndex ? { ...type, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : type
-      );
-      setTypes(updatedTypes);
-      setFormData({
-        name: '',
-      });
-      setEditingIndex(null);
-    }
   };
 
   const filteredTypes = types.filter(type =>

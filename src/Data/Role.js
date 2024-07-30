@@ -1,24 +1,16 @@
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon, PencilIcon, PlusCircleIcon, TrashIcon } from '@heroicons/react/24/solid';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+  ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon,
+  LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon,
+  PencilIcon, PlusCircleIcon, TrashIcon
+} from '@heroicons/react/24/solid';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:8081/RoleMaster';
 
 const Role = () => {
-  const [roles, setRoles] = useState([
-    { id: 1, name: 'Admin', isActive: true, createdOn: '2024-01-01', updatedOn: '2024-01-15' },
-    { id: 2, name: 'User', isActive: false, createdOn: '2024-01-02', updatedOn: '2024-01-16' },
-    { id: 3, name: 'Manager', isActive: true, createdOn: '2024-01-03', updatedOn: '2024-01-17' },
-    { id: 4, name: 'Developer', isActive: true, createdOn: '2024-01-04', updatedOn: '2024-01-18' },
-    { id: 5, name: 'Support', isActive: false, createdOn: '2024-01-05', updatedOn: '2024-01-19' },
-    { id: 6, name: 'Sales', isActive: true, createdOn: '2024-01-06', updatedOn: '2024-01-20' },
-    { id: 7, name: 'HR', isActive: true, createdOn: '2024-01-07', updatedOn: '2024-01-21' },
-    { id: 8, name: 'Finance', isActive: false, createdOn: '2024-01-08', updatedOn: '2024-01-22' },
-    { id: 9, name: 'Marketing', isActive: true, createdOn: '2024-01-09', updatedOn: '2024-01-23' },
-    { id: 10, name: 'Legal', isActive: true, createdOn: '2024-01-10', updatedOn: '2024-01-24' }
-  ]);
-
-  const [formData, setFormData] = useState({
-    name: '',
-  });
-
+  const [roles, setRoles] = useState([]);
+  const [formData, setFormData] = useState({ role: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -26,47 +18,76 @@ const Role = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [roleToToggle, setRoleToToggle] = useState(null);
 
+  useEffect(() => {
+    // Fetch roles from the server
+    const fetchRoles = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/findAll`);
+        setRoles(response.data);
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+      }
+    };
+    fetchRoles();
+  }, []);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData({ [name]: value });
   };
 
-  const handleAddRole = () => {
+  const handleAddRole = async () => {
     if (Object.values(formData).every(value => value)) {
       const newRole = {
-        id: Date.now(),
-        ...formData,
-        isActive: true,
-        createdOn: new Date().toISOString().split('T')[0],
-        updatedOn: new Date().toISOString().split('T')[0],
+        role: formData.role,
+        isActive: 1 // Use 1 to represent true
       };
-      setRoles([...roles, newRole]);
-      setFormData({
-        name: '',
-      });
+
+      try {
+        const response = await axios.post(`${API_URL}/save`, newRole);
+        setRoles([...roles, response.data]);
+        setFormData({ role: '' });
+      } catch (error) {
+        console.error('Error adding role:', error);
+      }
     }
   };
 
+
+
   const handleEditRole = (index) => {
     setEditingIndex(index);
-    setFormData(roles[index]);
+    setFormData({ role: roles[index].role });
   };
 
-  const handleDeleteRole = (index) => {
-    const updatedRoles = roles.filter((_, i) => i !== index);
-    setRoles(updatedRoles);
+  const handleSaveEdit = async () => {
+    if (formData.role) {
+      try {
+        const updatedRole = {
+          ...roles[editingIndex],
+          role: formData.role,
+          updatedOn: new Date().toISOString(),
+        };
+        const response = await axios.put(`${API_URL}/update/${updatedRole.id}`, updatedRole);
+        const updatedRoles = roles.map((role, index) =>
+          index === editingIndex ? response.data : role
+        );
+        setRoles(updatedRoles);
+        setFormData({ role: '' });
+        setEditingIndex(null);
+      } catch (error) {
+        console.error('Error updating role:', error.response ? error.response.data : error.message);
+      }
+    }
   };
 
-  const handleSaveEdit = () => {
-    if (Object.values(formData).every(value => value)) {
-      const updatedRoles = roles.map((role, index) =>
-        index === editingIndex ? { ...role, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : role
-      );
+  const handleDeleteRole = async (index) => {
+    try {
+      await axios.delete(`${API_URL}/delete/${roles[index].id}`);
+      const updatedRoles = roles.filter((_, i) => i !== index);
       setRoles(updatedRoles);
-      setFormData({
-        name: '',
-      });
-      setEditingIndex(null);
+    } catch (error) {
+      console.error('Error deleting role:', error.response ? error.response.data : error.message);
     }
   };
 
@@ -75,13 +96,23 @@ const Role = () => {
     setModalVisible(true);
   };
 
-  const confirmToggleActiveStatus = () => {
-    const updatedRoles = roles.map(role =>
-      role.id === roleToToggle.id ? { ...role, isActive: !role.isActive, updatedOn: new Date().toISOString().split('T')[0] } : role
-    );
-    setRoles(updatedRoles);
-    setModalVisible(false);
-    setRoleToToggle(null);
+  const confirmToggleActiveStatus = async () => {
+    try {
+      const updatedRole = {
+        ...roleToToggle,
+        isActive: !roleToToggle.isActive,
+        updatedOn: new Date().toISOString(),
+      };
+      const response = await axios.put(`${API_URL}/update/${updatedRole.id}`, updatedRole);
+      const updatedRoles = roles.map(role =>
+        role.id === updatedRole.id ? response.data : role
+      );
+      setRoles(updatedRoles);
+      setModalVisible(false);
+      setRoleToToggle(null);
+    } catch (error) {
+      console.error('Error toggling role status:', error.response ? error.response.data : error.message);
+    }
   };
 
   const filteredRoles = roles.filter(role =>
@@ -102,9 +133,9 @@ const Role = () => {
           <div className="grid grid-cols-3 gap-4">
             <input
               type="text"
-              placeholder="Name"
-              name="name"
-              value={formData.name}
+              placeholder="Role"
+              name="role"
+              value={formData.role}
               onChange={handleInputChange}
               className="p-2 border rounded-md outline-none"
             />
@@ -166,7 +197,7 @@ const Role = () => {
               {paginatedRoles.map((role, index) => (
                 <tr key={role.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td className="border p-2">{role.name}</td>
+                  <td className="border p-2">{role.role}</td>
                   <td className="border p-2">{role.createdOn}</td>
                   <td className="border p-2">{role.updatedOn}</td>
                   <td className="border p-2">{role.isActive ? 'Active' : 'Inactive'}</td>
@@ -181,59 +212,68 @@ const Role = () => {
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button
-                      onClick={() => handleToggleActiveStatus(role)}
-                      className={`p-1 rounded-full ${role.isActive ? 'bg-green-500' : 'bg-red-500'}`}
-                    >
-                      {role.isActive ? (
-                        <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
-                      ) : (
-                        <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
-                      )}
-                    </button>
-                  </td>
+                      <button
+                        onClick={() => handleToggleActiveStatus(index)}
+                        className={`p-1 rounded-full ${role.isActive ? 'bg-green-500' : 'bg-red-500'}`}
+                      >
+                        {role.isActive ? (
+                          <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
+                        ) : (
+                          <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
+                        )}
+                      </button>
+                    </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-      <div className="flex justify-between items-center mt-4">
-            <div>
-              <span className="text-sm text-gray-700">
-                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
-              </span>
-            </div>
-            <div className="flex items-center">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="bg-slate-200 px-3 py-1 rounded mr-3"
-              >
-                <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
-                Previous
-              </button>
-              <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="bg-slate-200 px-3 py-1 rounded ml-3"
-              >
-                Next
-                <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
-              </button>
-            </div>
+        <div className="flex justify-between items-center mt-4">
+          <div>
+            <span className="text-sm text-gray-700">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
+            </span>
+          </div>
+          <div className="flex items-center">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="bg-slate-200 px-3 py-1 rounded mr-3"
+            >
+              <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
+              Previous
+            </button>
+            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="bg-slate-200 px-3 py-1 rounded ml-3"
+            >
+              Next
+              <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
+            </button>
           </div>
         </div>
+      </div>
 
       {modalVisible && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-          <div className="bg-white p-8 rounded-md shadow-lg">
-            <h2 className="text-lg mb-4">Confirmation</h2>
-            <p>Are you sure you want to {roleToToggle.isActive ? 'deactivate' : 'activate'} this role?</p>
-            <div className="mt-4 flex justify-end space-x-4">
-              <button onClick={() => setModalVisible(false)} className="px-4 py-2 bg-gray-300 rounded-md">Cancel</button>
-              <button onClick={confirmToggleActiveStatus} className="px-4 py-2 bg-rose-900 text-white rounded-md">Confirm</button>
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <p>Are you sure you want to change the status of this role?</p>
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={confirmToggleActiveStatus}
+                className="bg-green-500 text-white rounded-lg p-2"
+              >
+                Confirm
+              </button>
+              <button
+                onClick={() => setModalVisible(false)}
+                className="bg-red-500 text-white rounded-lg p-2 ml-2"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
