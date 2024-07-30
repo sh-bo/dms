@@ -32,33 +32,33 @@ const Type = () => {
   };
 
   const handleAddType = async () => {
-    if (Object.values(formData).every(value => value)) {
+    if (formData.name) { // Ensure 'name' field is not empty
       const newType = {
-        type: formData.type,
+        name: formData.name, // Use 'name' field here
       };
 
       try {
         const response = await axios.post(`${API_URL}/save`, newType);
         setTypes([...types, response.data]);
-        setFormData({ type: '' });
+        setFormData({ name: '' }); // Reset the form field
       } catch (error) {
-        console.error('Error adding role:', error);
+        console.error('Error adding type:', error.response ? error.response.data : error.message);
       }
     }
   };
 
+
   const handleEditType = (index) => {
     setEditingIndex(index);
-    setFormData({ type: types[index].type });
+    setFormData({ name: types[index].name });
   };
 
-
   const handleSaveEdit = async () => {
-    if (formData.type) {
+    if (formData.name) { // Check 'name' instead of 'type'
       try {
         const updatedType = {
           ...types[editingIndex],
-          type: formData.type,
+          name: formData.name, // Use 'name' field here
           updatedOn: new Date().toISOString(),
         };
         const response = await axios.put(`${API_URL}/update/${updatedType.id}`, updatedType);
@@ -66,7 +66,7 @@ const Type = () => {
           index === editingIndex ? response.data : type
         );
         setTypes(updatedTypes);
-        setFormData({ type: '' });
+        setFormData({ name: '' }); // Reset the form field
         setEditingIndex(null);
       } catch (error) {
         console.error('Error updating type:', error.response ? error.response.data : error.message);
@@ -74,9 +74,15 @@ const Type = () => {
     }
   };
 
-  const handleDeleteType = (index) => {
-    const updatedTypes = types.filter((_, i) => i !== index);
-    setTypes(updatedTypes);
+
+  const handleDeleteType = async (index) => {
+    try {
+      await axios.delete(`${API_URL}/delete/${types[index].id}`);
+      const updatedTypes = types.filter((_, i) => i !== index);
+      setTypes(updatedTypes);
+    } catch (error) {
+      console.error('Error deleting type:', error.response ? error.response.data : error.message);
+    }
   };
 
   const filteredTypes = types.filter(type =>
