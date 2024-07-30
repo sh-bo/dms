@@ -1,72 +1,122 @@
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, PlusCircleIcon, TrashIcon } from '@heroicons/react/24/solid';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  CheckCircleIcon,
+  MagnifyingGlassIcon,
+  PencilIcon,
+  PlusCircleIcon,
+  TrashIcon
+} from '@heroicons/react/24/solid';
+import axios from 'axios';
 
 const Branch = () => {
-  const [branches, setBranches] = useState([
-    { id: 1, name: 'John Doe', address: '123 Main St', createdOn: '2024-01-01', updatedOn: '2024-01-15' },
-    { id: 2, name: 'Jane Smith', address: '456 Elm St', createdOn: '2024-01-02', updatedOn: '2024-01-16' },
-    { id: 3, name: 'Alice Johnson', address: '789 Oak St', createdOn: '2024-01-03', updatedOn: '2024-01-17' },
-    { id: 4, name: 'Bob Wilson', address: '101 Pine St', createdOn: '2024-01-04', updatedOn: '2024-01-18' },
-    { id: 5, name: 'Carol Martinez', address: '202 Cedar St', createdOn: '2024-01-05', updatedOn: '2024-01-19' }
-  ]);
-
+  const [branches, setBranches] = useState([]);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
+    id: null,
     name: '',
     address: '',
   });
-
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
+  const fetchBranches = async () => {
+    try {
+      const response = await axios.get('http://localhost:8080/branchmaster/findAll');
+      setBranches(response.data);
+    } catch (error) {
+      console.error('Error fetching branches:', error);
+    }
+  };
+
+  const fetchBranchById = async (id) => {
+    try {
+      const response = await axios.get(`http://localhost:8080/branchmaster/findById/${id}`);
+      setFormData(response.data);
+    } catch (error) {
+      console.error('Error fetching branch by ID:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAddBranch = () => {
-    if (Object.values(formData).every(value => value)) {
-      const newBranch = {
-        id: Date.now(),
-        ...formData,
-        createdOn: new Date().toISOString().split('T')[0],
-        updatedOn: new Date().toISOString().split('T')[0],
-      };
-      setBranches([...branches, newBranch]);
-      setFormData({
-        name: '',
-        address: '',
-      });
+  const handleAddBranch = async () => {
+    // Check if all form fields are filled
+    if (formData.name && formData.address) {
+      try {
+        // Prepare new branch data
+        const newBranch = {
+          ...formData,
+          createdOn: new Date().toISOString().split('T')[0],
+          updatedOn: new Date().toISOString().split('T')[0],
+        };
+
+        // Make POST request to save the new branch
+        const response = await axios.post('http://localhost:8080/branchmaster/save', newBranch);
+
+        // Update branches list with the newly created branch
+        setBranches([...branches, response.data]);
+
+        // Reset form data
+        setFormData({ name: '', address: '' });
+        setError('');
+      } catch (error) {
+        // Handle any errors
+        console.error('Error adding branch:', error);
+        setError('Failed to add branch. Please try again.');
+      }
+    } else {
+      setError('All fields are required.');
     }
   };
-
-  const handleEditBranch = (index) => {
+  const handleEditBranch = async (index) => {
     setEditingIndex(index);
-    setFormData(branches[index]);
+    const branchId = branches[index].id;
+    await fetchBranchById(branchId); // Fetch the branch details to edit
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (Object.values(formData).every(value => value)) {
-      const updatedBranches = branches.map((branch, index) =>
-        index === editingIndex ? { ...branch, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : branch
-      );
-      setBranches(updatedBranches);
-      setFormData({
-        name: '',
-        address: '',
-      });
-      setEditingIndex(null);
+      try {
+        const updatedBranch = {
+          ...formData,
+          updatedOn: new Date().toISOString().split('T')[0],
+        };
+        const response = await axios.put(`http://localhost:8080/branchmaster/update/${formData.id}`, updatedBranch);
+        const updatedBranches = branches.map((branch, index) =>
+          index === editingIndex ? response.data : branch
+        );
+        setBranches(updatedBranches);
+        setFormData({ id: null, name: '', address: '' });
+        setEditingIndex(null);
+      } catch (error) {
+        console.error('Error updating branch:', error);
+      }
     }
   };
 
-  const handleDeleteBranch = (index) => {
-    const updatedBranches = branches.filter((_, i) => i !== index);
-    setBranches(updatedBranches);
+  const handleDeleteBranch = async (index) => {
+    try {
+      await axios.delete(`http://localhost:8080/branchmaster/delete/${branches[index].id}`);
+      const updatedBranches = branches.filter((_, i) => i !== index);
+      setBranches(updatedBranches);
+    } catch (error) {
+      console.error('Error deleting branch:', error);
+    }
   };
 
   const filteredBranches = branches.filter(branch =>
-    Object.values(branch).some(value => 
+    Object.values(branch).some(value =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -77,7 +127,7 @@ const Branch = () => {
 
   return (
     <div className="p-1">
-      <h1 className="text-xl mb-4 font-semibold">BRANCHES</h1>
+      <h1 className="text-xl mb-4 font-semibold">BRANCH</h1>
       <div className="bg-white p-3 rounded-lg shadow-sm">
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
           <div className="grid grid-cols-2 gap-4">
@@ -142,7 +192,7 @@ const Branch = () => {
             <thead>
               <tr className="bg-slate-100">
                 <th className="border p-2 text-left">SR.</th>
-                <th className="border p-2 text-left">Branch</th>
+                <th className="border p-2 text-left">BRANCH</th>
                 <th className="border p-2 text-left">Address</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
@@ -189,7 +239,9 @@ const Branch = () => {
               <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
               Previous
             </button>
-            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
