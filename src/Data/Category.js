@@ -1,153 +1,69 @@
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  CheckCircleIcon,
-  LockClosedIcon,
-  LockOpenIcon,
-  MagnifyingGlassIcon,
-  PencilIcon,
-  PlusCircleIcon
-} from '@heroicons/react/24/solid';
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import React, { useState } from 'react';
 
 const Category = () => {
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState([
+    { id: 1, category: 'Technology', createdOn: '2024-01-01', updatedOn: '2024-01-15' },
+    { id: 2, category: 'Health', createdOn: '2024-01-02', updatedOn: '2024-01-16' },
+    { id: 3, category: 'Education', createdOn: '2024-01-03', updatedOn: '2024-01-17' },
+    { id: 4, category: 'Finance', createdOn: '2024-01-04', updatedOn: '2024-01-18' },
+    { id: 5, category: 'Entertainment', createdOn: '2024-01-05', updatedOn: '2024-01-19' },
+    { id: 6, category: 'Travel', createdOn: '2024-01-06', updatedOn: '2024-01-20' },
+    { id: 7, category: 'Sports', createdOn: '2024-01-07', updatedOn: '2024-01-21' },
+    { id: 8, category: 'Food', createdOn: '2024-01-08', updatedOn: '2024-01-22' },
+    { id: 9, category: 'Lifestyle', createdOn: '2024-01-09', updatedOn: '2024-01-23' },
+    { id: 10, category: 'Science', createdOn: '2024-01-10', updatedOn: '2024-01-24' }
+  ]);
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    branch: '',
-    department: '',
-    role: '',
+    category: '',
   });
+
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [categoryToToggle, setCategoryToToggle] = useState(null);
-
-  const [branchOptions] = useState(['Main Branch', 'Secondary Branch', 'East Branch', 'West Branch', 'North Branch', 'South Branch']);
-  const [departmentOptions] = useState(['IT', 'HR', 'Finance', 'Sales', 'Marketing', 'Operations', 'Customer Service', 'Legal']);
-  const [roleOptions] = useState(['Developer', 'Manager', 'Accountant', 'Sales Representative', 'Marketing Specialist', 'Operations Manager', 'Support Specialist', 'System Administrator', 'Recruiter', 'Legal Counsel']);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await axios.get('http://localhost:8080/categorymaster/findAll');
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
-
-  const fetchCategoryById = async (id) => {
-    try {
-      const response = await axios.get(`http://localhost:8080/categorymaster/findById/${id}`);
-      setFormData(response.data);
-    } catch (error) {
-      console.error('Error fetching category by ID:', error);
-    }
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAddCategory = async () => {
+  const handleAddCategory = () => {
     if (Object.values(formData).every(value => value)) {
-      try {
-        const newCategory = {
-          ...formData,
-          isActive: true,
-          createdOn: new Date().toISOString().split('T')[0],
-          updatedOn: new Date().toISOString().split('T')[0],
-        };
-        const response = await axios.post('http://localhost:8080/categorymaster/save', newCategory);
-        setCategories([...categories, response.data]);
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          branch: '',
-          department: '',
-          role: '',
-        });
-      } catch (error) {
-        console.error('Error adding category:', error);
-      }
-    }
-  };
-
-  const handleEditCategory = async (index) => {
-    setEditingIndex(index);
-    const categoryId = categories[index].id;
-    await fetchCategoryById(categoryId);
-  };
-
-  const handleSaveEdit = async () => {
-    if (Object.values(formData).every(value => value)) {
-      try {
-        const updatedCategory = {
-          ...formData,
-          updatedOn: new Date().toISOString().split('T')[0],
-        };
-        const response = await axios.put(`http://localhost:8080/categorymaster/update/${formData.id}`, updatedCategory);
-        const updatedCategories = categories.map((category, index) =>
-          index === editingIndex ? response.data : category
-        );
-        setCategories(updatedCategories);
-        setFormData({
-          name: '',
-          email: '',
-          phone: '',
-          branch: '',
-          department: '',
-          role: '',
-        });
-        setEditingIndex(null);
-      } catch (error) {
-        console.error('Error updating category:', error);
-      }
-    }
-  };
-
-  // const handleDeleteCategory = async (index) => {
-  //   try {
-  //     await axios.delete(`http://localhost:8080/categorymaster/delete/${categories[index].id}`);
-  //     const updatedCategories = categories.filter((_, i) => i !== index);
-  //     setCategories(updatedCategories);
-  //   } catch (error) {
-  //     console.error('Error deleting category:', error);
-  //   }
-  // };
-
-  const handleToggleActive = (category) => {
-    setCategoryToToggle(category);
-    setModalVisible(true);
-  };
-
-  const confirmToggleActive = async () => {
-    try {
-      const updatedCategory = {
-        ...categoryToToggle,
-        isActive: !categoryToToggle.isActive,
+      const newCategory = {
+        id: Date.now(),
+        ...formData,
+        createdOn: new Date().toISOString().split('T')[0],
         updatedOn: new Date().toISOString().split('T')[0],
       };
-      await axios.put(`http://localhost:8080/categorymaster/update/${updatedCategory.id}`, updatedCategory);
-      const updatedCategories = categories.map(category =>
-        category.id === categoryToToggle.id ? updatedCategory : category
+      setCategories([...categories, newCategory]);
+      setFormData({
+        category: '',
+      });
+    }
+  };
+
+  const handleEditCategory = (index) => {
+    setEditingIndex(index);
+    setFormData(categories[index]);
+  };
+
+  const handleDeleteCategory = (index) => {
+    const updatedCategories = categories.filter((_, i) => i !== index);
+    setCategories(updatedCategories);
+  };
+
+  const handleSaveEdit = () => {
+    if (Object.values(formData).every(value => value)) {
+      const updatedCategories = categories.map((category, index) =>
+        index === editingIndex ? { ...category, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : category
       );
       setCategories(updatedCategories);
-      setModalVisible(false);
-      setCategoryToToggle(null);
-    } catch (error) {
-      console.error('Error toggling active status:', error);
+      setFormData({
+        category: '',
+      });
+      setEditingIndex(null);
     }
   };
 
@@ -169,61 +85,12 @@ const Category = () => {
           <div className="grid grid-cols-3 gap-4">
             <input
               type="text"
-              placeholder="Name"
-              name="name"
-              value={formData.name}
+              placeholder="Category"
+              name="category"
+              value={formData.category}
               onChange={handleInputChange}
               className="p-2 border rounded-md outline-none"
             />
-            <input
-              type="email"
-              placeholder="Email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            />
-            <input
-              type="text"
-              placeholder="Phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            />
-            <select
-              name="branch"
-              value={formData.branch}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Branch</option>
-              {branchOptions.map(option => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <select
-              name="department"
-              value={formData.department}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Department</option>
-              {departmentOptions.map(option => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Role</option>
-              {roleOptions.map(option => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
           </div>
           <div className="mt-3 flex justify-start">
             {editingIndex === null ? (
@@ -268,49 +135,38 @@ const Category = () => {
           <table className="w-full border-collapse border">
             <thead>
               <tr className="bg-slate-100">
-              <th className="border p-2 text-left">SR.</th>
-              <th className="border p-2 text-left">Name</th>
-              <th className="border p-2 text-left">Email</th>
-              <th className="border p-2 text-left">Phone</th>
-              <th className="border p-2 text-left">Branch</th>
-              <th className="border p-2 text-left">Department</th>
-              <th className="border p-2 text-left">Role</th>
-              <th className="border p-2 text-left">Status</th>
-              <th className="border p-2 text-left">Created On</th>
-              <th className="border p-2 text-left">Updated On</th>
-              <th className="border p-2 text-left">Edit</th>
-              <th className="border p-2 text-left">Access</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedCategories.map((category, index) => (
-              <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                <td className="py-2 px-4 border-b">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                <td className="py-2 px-4 border-b">{category.name}</td>
-                <td className="py-2 px-4 border-b">{category.email}</td>
-                <td className="py-2 px-4 border-b">{category.phone}</td>
-                <td className="py-2 px-4 border-b">{category.branch}</td>
-                <td className="py-2 px-4 border-b">{category.department}</td>
-                <td className="py-2 px-4 border-b">{category.role}</td>
-                <td className="py-2 px-4 border-b">{category.isActive ? 'Active' : 'Inactive'}</td>
-                <td className="py-2 px-4 border-b">{category.createdOn}</td>
-                <td className="py-2 px-4 border-b">{category.updatedOn}</td>
-                <td className="py-2 px-4 border-b">
-                  <button onClick={() => handleEditCategory(index)} className="bg-rose-900 text-white rounded-full p-2 flex items-center text-sm justify-center">
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
-                </td>
-                <td className="py-2 px-4 border-b">
-                  <button onClick={() => handleToggleActive(category)} className="bg-rose-900 text-white rounded-full p-2 flex items-center text-sm justify-center">
-                    {category.isActive ? <LockClosedIcon className="h-5 w-5" /> : <LockOpenIcon className="h-5 w-5" />}
-                  </button>
-                </td>
+                <th className="border p-2 text-left">SR.</th>
+                <th className="border p-2 text-left">Category</th>
+                <th className="border p-2 text-left">Created On</th>
+                <th className="border p-2 text-left">Updated On</th>
+                <th className="border p-2 text-left">Edit</th>
+                <th className="border p-2 text-left">Delete</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="flex justify-between items-center mt-4">
+            </thead>
+            <tbody>
+              {paginatedCategories.map((category, index) => (
+                <tr key={category.id}>
+                  <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                  <td className="border p-2">{category.category}</td>
+                  <td className="border p-2">{category.createdOn}</td>
+                  <td className="border p-2">{category.updatedOn}</td>
+                  <td className="border p-2">
+                    <button onClick={() => handleEditCategory(index)}>
+                      <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
+                    </button>
+                  </td>
+                  <td className="border p-2">
+                    <button onClick={() => handleDeleteCategory(index)}>
+                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex justify-between items-center mt-4">
           <div>
             <span className="text-sm text-gray-700">
               Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
@@ -325,9 +181,7 @@ const Category = () => {
               <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
               Previous
             </button>
-            <span className="text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
+            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
@@ -339,22 +193,6 @@ const Category = () => {
           </div>
         </div>
       </div>
-
-      {modalVisible && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-lg shadow-lg">
-            <p>Are you sure you want to toggle the status of this category?</p>
-            <div className="mt-4 flex justify-end">
-              <button onClick={() => setModalVisible(false)} className="mr-2 bg-gray-300 p-2 rounded-lg">
-                Cancel
-              </button>
-              <button onClick={confirmToggleActive} className="bg-rose-900 text-white p-2 rounded-lg">
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

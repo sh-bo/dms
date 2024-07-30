@@ -2,26 +2,21 @@ import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, LockClosedIcon, LockOpe
 import React, { useState } from 'react';
 
 const Role = () => {
-    const [branches, setBranches] = useState([
-      { id: 1, name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', branch: 'Main Branch', department: 'IT', role: 'Developer', isActive: true, createdOn: '2024-01-01', updatedOn: '2024-01-15' },
-      { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '234-567-8901', branch: 'Secondary Branch', department: 'HR', role: 'Manager', isActive: false, createdOn: '2024-01-02', updatedOn: '2024-01-16' },
-      { id: 3, name: 'Alice Johnson', email: 'alice@example.com', phone: '345-678-9012', branch: 'East Branch', department: 'Finance', role: 'Accountant', isActive: true, createdOn: '2024-01-03', updatedOn: '2024-01-17' },
-      { id: 4, name: 'Bob Wilson', email: 'bob@example.com', phone: '456-789-0123', branch: 'West Branch', department: 'Sales', role: 'Sales Representative', isActive: true, createdOn: '2024-01-04', updatedOn: '2024-01-18' },
-      { id: 5, name: 'Carol Martinez', email: 'carol@example.com', phone: '567-890-1234', branch: 'North Branch', department: 'Marketing', role: 'Marketing Specialist', isActive: false, createdOn: '2024-01-05', updatedOn: '2024-01-19' },
-      { id: 6, name: 'David Lee', email: 'david@example.com', phone: '678-901-2345', branch: 'South Branch', department: 'Operations', role: 'Operations Manager', isActive: true, createdOn: '2024-01-06', updatedOn: '2024-01-20' },
-      { id: 7, name: 'Eva Brown', email: 'eva@example.com', phone: '789-012-3456', branch: 'Main Branch', department: 'Customer Service', role: 'Support Specialist', isActive: true, createdOn: '2024-01-07', updatedOn: '2024-01-21' },
-      { id: 8, name: 'Frank Garcia', email: 'frank@example.com', phone: '890-123-4567', branch: 'Secondary Branch', department: 'IT', role: 'System Administrator', isActive: false, createdOn: '2024-01-08', updatedOn: '2024-01-22' },
-      { id: 9, name: 'Grace Taylor', email: 'grace@example.com', phone: '901-234-5678', branch: 'East Branch', department: 'HR', role: 'Recruiter', isActive: true, createdOn: '2024-01-09', updatedOn: '2024-01-23' },
-      { id: 10, name: 'Henry Wilson', email: 'henry@example.com', phone: '012-345-6789', branch: 'West Branch', department: 'Legal', role: 'Legal Counsel', isActive: true, createdOn: '2024-01-10', updatedOn: '2024-01-24' }
-    ]);
+  const [roles, setRoles] = useState([
+    { id: 1, name: 'Admin', isActive: true, createdOn: '2024-01-01', updatedOn: '2024-01-15' },
+    { id: 2, name: 'User', isActive: false, createdOn: '2024-01-02', updatedOn: '2024-01-16' },
+    { id: 3, name: 'Manager', isActive: true, createdOn: '2024-01-03', updatedOn: '2024-01-17' },
+    { id: 4, name: 'Developer', isActive: true, createdOn: '2024-01-04', updatedOn: '2024-01-18' },
+    { id: 5, name: 'Support', isActive: false, createdOn: '2024-01-05', updatedOn: '2024-01-19' },
+    { id: 6, name: 'Sales', isActive: true, createdOn: '2024-01-06', updatedOn: '2024-01-20' },
+    { id: 7, name: 'HR', isActive: true, createdOn: '2024-01-07', updatedOn: '2024-01-21' },
+    { id: 8, name: 'Finance', isActive: false, createdOn: '2024-01-08', updatedOn: '2024-01-22' },
+    { id: 9, name: 'Marketing', isActive: true, createdOn: '2024-01-09', updatedOn: '2024-01-23' },
+    { id: 10, name: 'Legal', isActive: true, createdOn: '2024-01-10', updatedOn: '2024-01-24' }
+  ]);
 
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
-    phone: '',
-    branch: '',
-    department: '',
-    role: '',
   });
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,89 +24,75 @@ const Role = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
-  const [branchToToggle, setBranchToToggle] = useState(null);
-
-  const [branchOptions] = useState(['Main Branch', 'Secondary Branch', 'East Branch', 'West Branch', 'North Branch', 'South Branch']);
-  const [departmentOptions] = useState(['IT', 'HR', 'Finance', 'Sales', 'Marketing', 'Operations', 'Customer Service', 'Legal']);
-  const [roleOptions] = useState(['Developer', 'Manager', 'Accountant', 'Sales Representative', 'Marketing Specialist', 'Operations Manager', 'Support Specialist', 'System Administrator', 'Recruiter', 'Legal Counsel']);
+  const [roleToToggle, setRoleToToggle] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAddBranch = () => {
+  const handleAddRole = () => {
     if (Object.values(formData).every(value => value)) {
-      const newBranch = {
+      const newRole = {
         id: Date.now(),
         ...formData,
         isActive: true,
         createdOn: new Date().toISOString().split('T')[0],
         updatedOn: new Date().toISOString().split('T')[0],
       };
-      setBranches([...branches, newBranch]);
+      setRoles([...roles, newRole]);
       setFormData({
         name: '',
-        email: '',
-        phone: '',
-        branch: '',
-        department: '',
-        role: '',
       });
     }
   };
 
-  const handleEditBranch = (index) => {
+  const handleEditRole = (index) => {
     setEditingIndex(index);
-    setFormData(branches[index]);
+    setFormData(roles[index]);
   };
 
-  const handleDeleteBranch = (index) => {
-    const updatedBranches = branches.filter((_, i) => i !== index);
-    setBranches(updatedBranches);
+  const handleDeleteRole = (index) => {
+    const updatedRoles = roles.filter((_, i) => i !== index);
+    setRoles(updatedRoles);
   };
 
   const handleSaveEdit = () => {
     if (Object.values(formData).every(value => value)) {
-      const updatedBranches = branches.map((branch, index) =>
-        index === editingIndex ? { ...branch, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : branch
+      const updatedRoles = roles.map((role, index) =>
+        index === editingIndex ? { ...role, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : role
       );
-      setBranches(updatedBranches);
+      setRoles(updatedRoles);
       setFormData({
         name: '',
-        email: '',
-        phone: '',
-        branch: '',
-        department: '',
-        role: '',
       });
       setEditingIndex(null);
     }
   };
 
-  const handleToggleActive = (branch) => {
-    setBranchToToggle(branch);
+  const handleToggleActiveStatus = (role) => {
+    setRoleToToggle(role);
     setModalVisible(true);
   };
 
-  const confirmToggleActive = () => {
-    const updatedBranches = branches.map(branch =>
-      branch.id === branchToToggle.id ? { ...branch, isActive: !branch.isActive, updatedOn: new Date().toISOString().split('T')[0] } : branch
+  const confirmToggleActiveStatus = () => {
+    const updatedRoles = roles.map(role =>
+      role.id === roleToToggle.id ? { ...role, isActive: !role.isActive, updatedOn: new Date().toISOString().split('T')[0] } : role
     );
-    setBranches(updatedBranches);
+    setRoles(updatedRoles);
     setModalVisible(false);
-    setBranchToToggle(null);
+    setRoleToToggle(null);
   };
 
-  const filteredBranches = branches.filter(branch =>
-    Object.values(branch).some(value => 
+  const filteredRoles = roles.filter(role =>
+    Object.values(role).some(value =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
-  const totalItems = filteredBranches.length;
+  const totalItems = filteredRoles.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedBranches = filteredBranches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedRoles = filteredRoles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-1">
@@ -130,7 +111,7 @@ const Role = () => {
           </div>
           <div className="mt-3 flex justify-start">
             {editingIndex === null ? (
-              <button onClick={handleAddBranch} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
+              <button onClick={handleAddRole} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
                 <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Role
               </button>
             ) : (
@@ -172,7 +153,7 @@ const Role = () => {
             <thead>
               <tr className="bg-slate-100">
                 <th className="border p-2 text-left">SR.</th>
-                <th className="border p-2 text-left">Name</th>
+                <th className="border p-2 text-left">Role</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
                 <th className="border p-2 text-left">Status</th>
@@ -182,34 +163,34 @@ const Role = () => {
               </tr>
             </thead>
             <tbody>
-              {paginatedBranches.map((branch, index) => (
-                <tr key={branch.id}>
+              {paginatedRoles.map((role, index) => (
+                <tr key={role.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td className="border p-2">{branch.name}</td>
-                  <td className="border p-2">{branch.createdOn}</td>
-                  <td className="border p-2">{branch.updatedOn}</td>
-                  <td className="border p-2">{branch.isActive ? 'Active' : 'Inactive'}</td>
+                  <td className="border p-2">{role.name}</td>
+                  <td className="border p-2">{role.createdOn}</td>
+                  <td className="border p-2">{role.updatedOn}</td>
+                  <td className="border p-2">{role.isActive ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
-                      <button onClick={() => handleEditBranch(index)}>
-                        <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
+                    <button onClick={() => handleEditRole(index)}>
+                      <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button onClick={() => handleDeleteBranch(index)}>
+                    <button onClick={() => handleDeleteRole(index)}>
                       <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
-                  <button
-                    onClick={() => handleToggleActive(branch)}
-                    className={`p-1 rounded-full ${branch.isActive ? 'bg-green-500' : 'bg-red-500'}`}
-                  >
-                    {branch.isActive ? (
-                      <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
-                    ) : (
-                      <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
-                    )}
-                  </button>
+                    <button
+                      onClick={() => handleToggleActiveStatus(role)}
+                      className={`p-1 rounded-full ${role.isActive ? 'bg-green-500' : 'bg-red-500'}`}
+                    >
+                      {role.isActive ? (
+                        <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
+                      ) : (
+                        <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
+                      )}
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -217,52 +198,42 @@ const Role = () => {
           </table>
         </div>
 
-        <div className="flex justify-between items-center mt-4">
-          <div>
-            <span className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
-            </span>
-          </div>
-          <div className="flex items-center">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="bg-slate-200 px-3 py-1 rounded mr-3"
-            >
-              <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
-              Previous
-            </button>
-            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="bg-slate-200 px-3 py-1 rounded ml-3"
-            >
-              Next
-              <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
-            </button>
+      <div className="flex justify-between items-center mt-4">
+            <div>
+              <span className="text-sm text-gray-700">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
+              </span>
+            </div>
+            <div className="flex items-center">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="bg-slate-200 px-3 py-1 rounded mr-3"
+              >
+                <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
+                Previous
+              </button>
+              <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="bg-slate-200 px-3 py-1 rounded ml-3"
+              >
+                Next
+                <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
 
       {modalVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-11/12 max-w-md">
-            <h3 className="text-xl mb-4">Confirm Toggle Status</h3>
-            <p>Are you sure you want to {branchToToggle?.isActive ? 'deactivate' : 'activate'} the status of the user "{branchToToggle?.name}"?</p>
-            <div className="mt-4 flex justify-end gap-4">
-              <button
-                onClick={() => setModalVisible(false)}
-                className="p-2 bg-gray-400 text-white rounded-md"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmToggleActive}
-                className="p-2 bg-blue-500 text-white rounded-md"
-              >
-                Confirm
-              </button>
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white p-8 rounded-md shadow-lg">
+            <h2 className="text-lg mb-4">Confirmation</h2>
+            <p>Are you sure you want to {roleToToggle.isActive ? 'deactivate' : 'activate'} this role?</p>
+            <div className="mt-4 flex justify-end space-x-4">
+              <button onClick={() => setModalVisible(false)} className="px-4 py-2 bg-gray-300 rounded-md">Cancel</button>
+              <button onClick={confirmToggleActiveStatus} className="px-4 py-2 bg-rose-900 text-white rounded-md">Confirm</button>
             </div>
           </div>
         </div>

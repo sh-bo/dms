@@ -1,113 +1,147 @@
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, PlusCircleIcon, TrashIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, EyeIcon, MagnifyingGlassIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
 import React, { useState } from 'react';
 
 const Approve = () => {
-  const [branches, setBranches] = useState([
-    { id: 1, name: 'John Doe', address: '123 Main St', createdOn: '2024-01-01', updatedOn: '2024-01-15' },
-    { id: 2, name: 'Jane Smith', address: '456 Elm St', createdOn: '2024-01-02', updatedOn: '2024-01-16' },
-    { id: 3, name: 'Alice Johnson', address: '789 Oak St', createdOn: '2024-01-03', updatedOn: '2024-01-17' },
-    { id: 4, name: 'Bob Wilson', address: '101 Pine St', createdOn: '2024-01-04', updatedOn: '2024-01-18' },
-    { id: 5, name: 'Carol Martinez', address: '202 Cedar St', createdOn: '2024-01-05', updatedOn: '2024-01-19' }
-  ]);
+    const [documents, setDocuments] = useState([
+      { id: 1, title: 'Annual Report', fileNo: 'DOC001', subject: 'Finance', version: '1.0', createdOn: '2024-01-01', updatedOn: '2024-01-15', category: 'Report', year: '2024', type: 'PDF', employeeID: 'EMP001', employeeDepartment: 'Finance', employeeBranch: 'Main Branch', approvalStatus: 'Pending' },
+      { id: 2, title: 'Marketing Plan', fileNo: 'DOC002', subject: 'Marketing', version: '2.1', createdOn: '2024-01-02', updatedOn: '2024-01-16', category: 'Plan', year: '2024', type: 'DOCX', employeeID: 'EMP002', employeeDepartment: 'Marketing', employeeBranch: 'East Branch', approvalStatus: 'Pending' },
+      // Add more dummy data as needed
+    ]);
 
   const [formData, setFormData] = useState({
-    name: '',
-    address: '',
+    title: '',
+    subject: '',
+    category: '',
+    year: '',
+    type: '',
+    files: [],
   });
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [categoryOptions] = useState(['Report', 'Plan', 'Policy', 'Procedure', 'Template']);
+  const [yearOptions] = useState(['2022', '2023', '2024', '2025']);
+  const [typeOptions] = useState(['PDF', 'DOCX', 'XLSX', 'PPT']);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAddBranch = () => {
+  const handleFileChange = (e) => {
+    setFormData({ ...formData, files: Array.from(e.target.files) });
+  };
+
+  const handleAddDocument = () => {
     if (Object.values(formData).every(value => value)) {
-      const newBranch = {
+      const newDocument = {
         id: Date.now(),
         ...formData,
+        fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        version: '1.0',
         createdOn: new Date().toISOString().split('T')[0],
         updatedOn: new Date().toISOString().split('T')[0],
+        employeeID: 'EMP001', // This would typically come from the logged-in user
+        employeeDepartment: 'IT', // This would typically come from the logged-in user
+        employeeBranch: 'Main Branch', // This would typically come from the logged-in user
+        approvalStatus: 'Pending',
       };
-      setBranches([...branches, newBranch]);
+      setDocuments([...documents, newDocument]);
       setFormData({
-        name: '',
-        address: '',
+        title: '',
+        subject: '',
+        category: '',
+        year: '',
+        type: '',
+        files: [],
       });
     }
   };
 
-  const handleEditBranch = (index) => {
-    setEditingIndex(index);
-    setFormData(branches[index]);
+  const handleApproveDocument = (id) => {
+    setDocuments(documents.map(doc =>
+      doc.id === id ? { ...doc, approvalStatus: 'Approved' } : doc
+    ));
   };
 
-  const handleSaveEdit = () => {
-    if (Object.values(formData).every(value => value)) {
-      const updatedBranches = branches.map((branch, index) =>
-        index === editingIndex ? { ...branch, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : branch
-      );
-      setBranches(updatedBranches);
-      setFormData({
-        name: '',
-        address: '',
-      });
-      setEditingIndex(null);
-    }
-  };
-
-  const handleDeleteBranch = (index) => {
-    const updatedBranches = branches.filter((_, i) => i !== index);
-    setBranches(updatedBranches);
-  };
-
-  const filteredBranches = branches.filter(branch =>
-    Object.values(branch).some(value => 
+  const filteredDocuments = documents.filter(doc =>
+    Object.values(doc).some(value => 
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
-  const totalItems = filteredBranches.length;
+  const totalItems = filteredDocuments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedBranches = filteredBranches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-1">
-      <h1 className="text-xl mb-4 font-semibold">BRANCH</h1>
+      <h1 className="text-xl mb-4 font-semibold">DOCUMENT APPROVAL</h1>
       <div className="bg-white p-3 rounded-lg shadow-sm">
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <input
               type="text"
-              placeholder="Name"
-              name="name"
-              value={formData.name}
+              placeholder="Title"
+              name="title"
+              value={formData.title}
               onChange={handleInputChange}
               className="p-2 border rounded-md outline-none"
             />
             <input
               type="text"
-              placeholder="Address"
-              name="address"
-              value={formData.address}
+              placeholder="Subject"
+              name="subject"
+              value={formData.subject}
               onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
+            />
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
+            >
+              <option value="">Select Category</option>
+              {categoryOptions.map((category, index) => (
+                <option key={index} value={category}>{category}</option>
+              ))}
+            </select>
+            <select
+              name="year"
+              value={formData.year}
+              onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
+            >
+              <option value="">Select Year</option>
+              {yearOptions.map((year, index) => (
+                <option key={index} value={year}>{year}</option>
+              ))}
+            </select>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleInputChange}
+              className="p-2 border rounded-md outline-none"
+            >
+              <option value="">Select Type</option>
+              {typeOptions.map((type, index) => (
+                <option key={index} value={type}>{type}</option>
+              ))}
+            </select>
+            <input
+              type="file"
+              multiple
+              onChange={handleFileChange}
               className="p-2 border rounded-md outline-none"
             />
           </div>
           <div className="mt-3 flex justify-start">
-            {editingIndex === null ? (
-              <button onClick={handleAddBranch} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Branch
-              </button>
-            ) : (
-              <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <CheckCircleIcon className="h-5 w-5 mr-1" /> Save
-              </button>
-            )}
+            <button onClick={handleAddDocument} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
+              <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Document
+            </button>
           </div>
         </div>
 
@@ -142,31 +176,52 @@ const Approve = () => {
             <thead>
               <tr className="bg-slate-100">
                 <th className="border p-2 text-left">SR.</th>
-                <th className="border p-2 text-left">Name</th>
-                <th className="border p-2 text-left">Address</th>
+                <th className="border p-2 text-left">Title</th>
+                <th className="border p-2 text-left">File No</th>
+                <th className="border p-2 text-left">Subject</th>
+                <th className="border p-2 text-left">Version</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
-                <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Delete</th>
+                <th className="border p-2 text-left">Category</th>
+                <th className="border p-2 text-left">Year</th>
+                <th className="border p-2 text-left">Type</th>
+                <th className="border p-2 text-left">EID</th>
+                <th className="border p-2 text-left">Department</th>
+                <th className="border p-2 text-left">Branch</th>
+                <th className="border p-2 text-left">Approval</th>
+                <th className="border p-2 text-left">View</th>
+                <th className="border p-2 text-left">Approve</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedBranches.map((branch, index) => (
-                <tr key={branch.id}>
+              {paginatedDocuments.map((doc, index) => (
+                <tr key={doc.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td className="border p-2">{branch.name}</td>
-                  <td className="border p-2">{branch.address}</td>
-                  <td className="border p-2">{branch.createdOn}</td>
-                  <td className="border p-2">{branch.updatedOn}</td>
+                  <td className="border p-2">{doc.title}</td>
+                  <td className="border p-2">{doc.fileNo}</td>
+                  <td className="border p-2">{doc.subject}</td>
+                  <td className="border p-2">{doc.version}</td>
+                  <td className="border p-2">{doc.createdOn}</td>
+                  <td className="border p-2">{doc.updatedOn}</td>
+                  <td className="border p-2">{doc.category}</td>
+                  <td className="border p-2">{doc.year}</td>
+                  <td className="border p-2">{doc.type}</td>
+                  <td className="border p-2">{doc.employeeID}</td>
+                  <td className="border p-2">{doc.employeeDepartment}</td>
+                  <td className="border p-2">{doc.employeeBranch}</td>
+                  <td className="border p-2">{doc.approvalStatus}</td>
                   <td className="border p-2">
-                    <button onClick={() => handleEditBranch(index)}>
-                      <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
+                  <button>
+                      <EyeIcon className="h-6 w-6 bg-yellow-400 rounded-xl p-1 text-white">
+                      </EyeIcon>
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button onClick={() => handleDeleteBranch(index)}>
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
-                    </button>
+                    {doc.approvalStatus === 'Pending' && (
+                      <button onClick={() => handleApproveDocument(doc.id)}>
+                        <CheckCircleIcon className="h-6 w-6 text-white bg-green-500 rounded-xl p-0.5 ml-5" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

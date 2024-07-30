@@ -8,10 +8,11 @@ import {
   PlusCircleIcon,
   TrashIcon
 } from '@heroicons/react/24/solid';
-  import axios from 'axios';
+import axios from 'axios';
 
 const Branch = () => {
   const [branches, setBranches] = useState([]);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     id: null,
     name: '',
@@ -50,22 +51,34 @@ const Branch = () => {
   };
 
   const handleAddBranch = async () => {
-    if (Object.values(formData).every(value => value)) {
+    // Check if all form fields are filled
+    if (formData.name && formData.address) {
       try {
+        // Prepare new branch data
         const newBranch = {
           ...formData,
           createdOn: new Date().toISOString().split('T')[0],
           updatedOn: new Date().toISOString().split('T')[0],
         };
+
+        // Make POST request to save the new branch
         const response = await axios.post('http://localhost:8080/branchmaster/save', newBranch);
+
+        // Update branches list with the newly created branch
         setBranches([...branches, response.data]);
-        setFormData({ id: null, name: '', address: '' });
+
+        // Reset form data
+        setFormData({ name: '', address: '' });
+        setError('');
       } catch (error) {
+        // Handle any errors
         console.error('Error adding branch:', error);
+        setError('Failed to add branch. Please try again.');
       }
+    } else {
+      setError('All fields are required.');
     }
   };
-
   const handleEditBranch = async (index) => {
     setEditingIndex(index);
     const branchId = branches[index].id;
@@ -179,7 +192,7 @@ const Branch = () => {
             <thead>
               <tr className="bg-slate-100">
                 <th className="border p-2 text-left">SR.</th>
-                <th className="border p-2 text-left">Name</th>
+                <th className="border p-2 text-left">BRANCH</th>
                 <th className="border p-2 text-left">Address</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
