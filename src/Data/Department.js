@@ -14,7 +14,6 @@ import axios from 'axios';
 
 const Department = () => {
   const [branches, setBranches] = useState([]);
-  const [error, setErrorMessage] = useState('');
   const [departments, setDepartments] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
@@ -54,71 +53,20 @@ const Department = () => {
   };
 
   const handleAddDepartment = async () => {
-    // Trim whitespace from form data
-    const trimmedFormData = Object.fromEntries(
-      Object.entries(formData).map(([key, value]) => [key, value.trim()])
-    );
-  
-    // Check if all form fields are filled
-    if (Object.values(trimmedFormData).every(value => value !== '')) {
+    if (Object.values(formData).every(value => value)) {
       try {
         const newDepartment = {
-          ...trimmedFormData,
+          ...formData,
           createdOn: new Date().toISOString().split('T')[0],
           updatedOn: new Date().toISOString().split('T')[0],
           isActive: true,
         };
-  
-        console.log('Sending department data:', newDepartment);
-  
-        const response = await axios.post('http://localhost:8080/DepartmentMaster/save', newDepartment, {
-          headers: {
-            'Content-Type': 'application/json',
-            // Add any necessary authentication headers here
-          }
-        });
-  
-        // Check if the response is successful
-        if (response.status === 200 || response.status === 201) {
-          setDepartments(prevDepartments => [...prevDepartments, response.data]);
-          setFormData({ name: '', branch: '' });
-          console.log('Department added successfully:', response.data);
-          // Optionally, show a success message to the user
-          // setSuccessMessage('Department added successfully');
-        } else {
-          throw new Error('Unexpected response status: ' + response.status);
-        }
+        const response = await axios.post('http://localhost:8080/DepartmentMaster/save', newDepartment);
+        setDepartments([...departments, response.data]);
+        setFormData({ name: '', branch: '' });
       } catch (error) {
-        let errorMessage = 'An error occurred while adding the department.';
-  
-        if (error.response) {
-          // The server responded with a status code outside the 2xx range
-          console.error('Server error:', error.response.data);
-          console.error('Status code:', error.response.status);
-          
-          if (error.response.data && error.response.data.message) {
-            errorMessage = error.response.data.message;
-          } else if (error.response.status === 400) {
-            errorMessage = 'Bad request. Please check your input data.';
-          } else if (error.response.status === 401) {
-            errorMessage = 'Unauthorized. Please check your authentication.';
-          }
-        } else if (error.request) {
-          // The request was made but no response was received
-          console.error('No response received:', error.request);
-          errorMessage = 'No response received from server. Please try again.';
-        } else {
-          // Something happened in setting up the request that triggered an Error
-          console.error('Error setting up request:', error.message);
-          errorMessage = 'Error setting up request. Please try again.';
-        }
-        
-        // Set error message to display to the user
-        setErrorMessage(errorMessage);
+        console.error('Error adding department:', error);
       }
-    } else {
-      // Handle case where form is not completely filled
-      setErrorMessage('Please fill all fields before submitting');
     }
   };
 
@@ -287,30 +235,23 @@ const Department = () => {
         </div>
 
         <div className="flex justify-between items-center mt-4">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            className="bg-blue-500 text-white p-2 rounded-md"
+            disabled={currentPage === 1}
+          >
+            <ArrowLeftIcon className="h-6 w-6" />
+          </button>
           <div>
-            <span className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
-            </span>
+            <span className="mr-2">Page {currentPage} of {totalPages}</span>
           </div>
-          <div className="flex items-center">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="bg-slate-200 px-3 py-1 rounded mr-3"
-            >
-              <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
-              Previous
-            </button>
-            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="bg-slate-200 px-3 py-1 rounded ml-3"
-            >
-              Next
-              <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
-            </button>
-          </div>
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            className="bg-blue-500 text-white p-2 rounded-md"
+            disabled={currentPage === totalPages}
+          >
+            <ArrowRightIcon className="h-6 w-6" />
+          </button>
         </div>
       </div>
     </div>
