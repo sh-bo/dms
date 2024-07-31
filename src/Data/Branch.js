@@ -10,6 +10,8 @@ import {
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
 
+const API_URL = 'http://localhost:8080/branchmaster';
+
 const Branch = () => {
   const [branches, setBranches] = useState([]);
   const [error, setError] = useState('');
@@ -29,7 +31,7 @@ const Branch = () => {
 
   const fetchBranches = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/branchmaster/findAll');
+      const response = await axios.get(`${API_URL}/findAll`);
       setBranches(response.data);
     } catch (error) {
       console.error('Error fetching branches:', error);
@@ -38,7 +40,7 @@ const Branch = () => {
 
   const fetchBranchById = async (id) => {
     try {
-      const response = await axios.get(`http://localhost:8080/branchmaster/findById/${id}`);
+      const response = await axios.get(`${API_URL}/findById/${id}`);
       setFormData(response.data);
     } catch (error) {
       console.error('Error fetching branch by ID:', error);
@@ -62,7 +64,7 @@ const Branch = () => {
         };
 
         // Make POST request to save the new branch
-        const response = await axios.post('http://localhost:8080/branchmaster/save', newBranch);
+        const response = await axios.post(`${API_URL}/save`, newBranch);
 
         // Update branches list with the newly created branch
         setBranches([...branches, response.data]);
@@ -92,7 +94,7 @@ const Branch = () => {
           ...formData,
           updatedOn: new Date().toISOString().split('T')[0],
         };
-        const response = await axios.put(`http://localhost:8080/branchmaster/update/${formData.id}`, updatedBranch);
+        const response = await axios.put(`${API_URL}/update/${formData.id}`, updatedBranch);
         const updatedBranches = branches.map((branch, index) =>
           index === editingIndex ? response.data : branch
         );
@@ -107,7 +109,7 @@ const Branch = () => {
 
   const handleDeleteBranch = async (index) => {
     try {
-      await axios.delete(`http://localhost:8080/branchmaster/delete/${branches[index].id}`);
+      await axios.delete(`${API_URL}/delete/${branches[index].id}`);
       const updatedBranches = branches.filter((_, i) => i !== index);
       setBranches(updatedBranches);
     } catch (error) {
