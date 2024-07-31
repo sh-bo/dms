@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8081/RoleMaster';
+const API_URL = 'http://localhost:8080/RoleMaster';
 
 const Role = () => {
   const [roles, setRoles] = useState([]);
