@@ -1,64 +1,85 @@
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
-import React, { useState } from 'react';
+import { YEAR_API } from '../API/apiConfig';
+import {ArrowLeftIcon, ArrowRightIcon,CheckCircleIcon,PencilIcon,PlusCircleIcon,TrashIcon,MagnifyingGlassIcon,} from '@heroicons/react/24/solid';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+
 
 const Year = () => {
-  const [years, setYears] = useState([
-    { id: 1, year: '2020', createdOn: '2024-01-01', updatedOn: '2024-01-15' },
-    { id: 2, year: '2021', createdOn: '2024-01-02', updatedOn: '2024-01-16' },
-    { id: 3, year: '2022', createdOn: '2024-01-03', updatedOn: '2024-01-17' },
-    { id: 4, year: '2023', createdOn: '2024-01-04', updatedOn: '2024-01-18' },
-    { id: 5, year: '2024', createdOn: '2024-01-05', updatedOn: '2024-01-19' }
-  ]);
-
-  const [formData, setFormData] = useState({
-    year: '',
-  });
-
+  const [years, setYears] = useState([]);
+  const [formData, setFormData] = useState({ year: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    // Fetch years from the server
+    fetchYears();
+  }, []);
+
+  const fetchYears = async () => {
+    try {
+      const response = await axios.get(`${YEAR_API}/findAll`);
+      setYears(response.data);
+    } catch (error) {
+      console.error('Error fetching years:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleAddYear = () => {
-    if (Object.values(formData).every(value => value)) {
+  const handleAddYear = async () => {
+    if (formData.year) {
       const newYear = {
-        id: Date.now(),
-        ...formData,
-        createdOn: new Date().toISOString().split('T')[0],
-        updatedOn: new Date().toISOString().split('T')[0],
+        name: formData.year, // Adjust field name here
       };
-      setYears([...years, newYear]);
-      setFormData({
-        year: '',
-      });
+
+      try {
+        await axios.post(`${YEAR_API}/save`, newYear);
+        // Reload the years list to include the new entry
+        fetchYears();
+        setFormData({ year: '' }); // Reset the form field
+      } catch (error) {
+        console.error('Error adding year:', error.response ? error.response.data : error.message);
+      }
     }
   };
 
   const handleEditYear = (index) => {
     setEditingIndex(index);
-    setFormData(years[index]);
+    setFormData({ year: years[index].name }); // Use 'name' instead of 'year'
   };
 
-  const handleDeleteYear = (index) => {
-    const updatedYears = years.filter((_, i) => i !== index);
-    setYears(updatedYears);
+  const handleSaveEdit = async () => {
+    if (formData.year && editingIndex !== null) {
+      try {
+        const updatedYear = {
+          ...years[editingIndex],
+          name: formData.year, // Use 'name' instead of 'year'
+          updatedOn: new Date().toISOString(),
+        };
+        await axios.put(`${YEAR_API}/update/${updatedYear.id}`, updatedYear);
+        // Reload the years list to include the updated entry
+        fetchYears();
+        setFormData({ year: '' }); // Reset the form field
+        setEditingIndex(null);
+      } catch (error) {
+        console.error('Error updating year:', error.response ? error.response.data : error.message);
+      }
+    }
   };
 
-  const handleSaveEdit = () => {
-    if (Object.values(formData).every(value => value)) {
-      const updatedYears = years.map((year, index) =>
-        index === editingIndex ? { ...year, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : year
-      );
-      setYears(updatedYears);
-      setFormData({
-        year: '',
-      });
-      setEditingIndex(null);
+  const handleDeleteYear = async (index) => {
+    try {
+      await axios.delete(`${YEAR_API}/delete/${years[index].id}`);
+      // Reload the years list after deletion
+      fetchYears();
+    } catch (error) {
+      console.error('Error deleting year:', error.response ? error.response.data : error.message);
     }
   };
 
@@ -79,8 +100,8 @@ const Year = () => {
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
           <div className="grid grid-cols-3 gap-4">
             <input
-              type="text"
-              placeholder="Year"
+              type="number" min="1900" max="2099" step="1"
+              placeholder="2016"
               name="year"
               value={formData.year}
               onChange={handleInputChange}
@@ -142,7 +163,7 @@ const Year = () => {
               {paginatedYears.map((year, index) => (
                 <tr key={year.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td className="border p-2">{year.year}</td>
+                  <td className="border p-2">{year.name}</td> {/* Changed from year.year to year.name */}
                   <td className="border p-2">{year.createdOn}</td>
                   <td className="border p-2">{year.updatedOn}</td>
                   <td className="border p-2">
