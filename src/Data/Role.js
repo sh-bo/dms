@@ -1,3 +1,4 @@
+import { ROLE_API } from '../API/apiConfig';
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon,
@@ -5,8 +6,6 @@ import {
   PencilIcon, PlusCircleIcon, TrashIcon
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
-
-const API_URL = 'http://localhost:8081/RoleMaster';
 
 const Role = () => {
   const [roles, setRoles] = useState([]);
@@ -22,7 +21,7 @@ const Role = () => {
     // Fetch roles from the server
     const fetchRoles = async () => {
       try {
-        const response = await axios.get(`${API_URL}/findAll`);
+        const response = await axios.get(`${ROLE_API}/findAll`);
         setRoles(response.data);
       } catch (error) {
         console.error('Error fetching roles:', error);
@@ -44,7 +43,7 @@ const Role = () => {
       };
 
       try {
-        const response = await axios.post(`${API_URL}/save`, newRole);
+        const response = await axios.post(`${ROLE_API}/save`, newRole);
         setRoles([...roles, response.data]);
         setFormData({ role: '' });
       } catch (error) {
@@ -52,8 +51,6 @@ const Role = () => {
       }
     }
   };
-
-
 
   const handleEditRole = (index) => {
     setEditingIndex(index);
@@ -68,7 +65,7 @@ const Role = () => {
           role: formData.role,
           updatedOn: new Date().toISOString(),
         };
-        const response = await axios.put(`${API_URL}/update/${updatedRole.id}`, updatedRole);
+        const response = await axios.put(`${ROLE_API}/update/${updatedRole.id}`, updatedRole);
         const updatedRoles = roles.map((role, index) =>
           index === editingIndex ? response.data : role
         );
@@ -83,7 +80,7 @@ const Role = () => {
 
   const handleDeleteRole = async (index) => {
     try {
-      await axios.delete(`${API_URL}/delete/${roles[index].id}`);
+      await axios.delete(`${ROLE_API}/delete/${roles[index].id}`);
       const updatedRoles = roles.filter((_, i) => i !== index);
       setRoles(updatedRoles);
     } catch (error) {
@@ -97,21 +94,35 @@ const Role = () => {
   };
 
   const confirmToggleActiveStatus = async () => {
-    try {
-      const updatedRole = {
-        ...roleToToggle,
-        isActive: !roleToToggle.isActive,
-        updatedOn: new Date().toISOString(),
-      };
-      const response = await axios.put(`${API_URL}/update/${updatedRole.id}`, updatedRole);
-      const updatedRoles = roles.map(role =>
-        role.id === updatedRole.id ? response.data : role
-      );
-      setRoles(updatedRoles);
-      setModalVisible(false);
-      setRoleToToggle(null);
-    } catch (error) {
-      console.error('Error toggling role status:', error.response ? error.response.data : error.message);
+    if (roleToToggle) {
+      try {
+        const updatedRole = {
+          ...roleToToggle,
+          isActive: roleToToggle.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
+          updatedOn: new Date().toISOString(),
+        };
+
+        console.log('Sending payload:', updatedRole); // Debug log
+
+        const response = await axios.put(
+          `${ROLE_API}/updatestatus/${updatedRole.id}`, 
+          updatedRole,
+          {
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+
+        const updatedRoles = roles.map(role =>
+          role.id === updatedRole.id ? response.data : role
+        );
+        setRoles(updatedRoles);
+        setModalVisible(false);
+        setRoleToToggle(null);
+      } catch (error) {
+        console.error('Error toggling role status:', error.response ? error.response.data : error.message);
+      }
+    } else {
+      console.error('roleToToggle is not defined or null');
     }
   };
 
@@ -200,7 +211,7 @@ const Role = () => {
                   <td className="border p-2">{role.role}</td>
                   <td className="border p-2">{role.createdOn}</td>
                   <td className="border p-2">{role.updatedOn}</td>
-                  <td className="border p-2">{role.isActive ? 'Active' : 'Inactive'}</td>
+                  <td className="border p-2">{role.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditRole(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
@@ -212,17 +223,17 @@ const Role = () => {
                     </button>
                   </td>
                   <td className="border p-2">
-                      <button
-                        onClick={() => handleToggleActiveStatus(index)}
-                        className={`p-1 rounded-full ${role.isActive ? 'bg-green-500' : 'bg-red-500'}`}
-                      >
-                        {role.isActive ? (
-                          <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
-                        ) : (
-                          <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
-                        )}
-                      </button>
-                    </td>
+                    <button
+                      onClick={() => handleToggleActiveStatus(role)}
+                      className={`p-1 rounded-full ${role.isActive === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                    >
+                      {role.isActive === 1 ? (
+                        <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
+                      ) : (
+                        <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
+                      )}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
