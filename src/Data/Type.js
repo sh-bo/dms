@@ -1,9 +1,9 @@
+import { TYPE_API } from '../API/apiConfig';
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 
-const API_URL = 'http://localhost:8081/TypeMaster';
 
 const Type = () => {
   const [types, setTypes] = useState([]);
@@ -17,7 +17,7 @@ const Type = () => {
     // Fetch types from the server
     const fetchTypes = async () => {
       try {
-        const response = await axios.get(`${API_URL}/findAll`);
+        const response = await axios.get(`${TYPE_API}/findAll`);
         setTypes(response.data);
       } catch (error) {
         console.error('Error fetching typess:', error);
@@ -38,7 +38,7 @@ const Type = () => {
       };
 
       try {
-        const response = await axios.post(`${API_URL}/save`, newType);
+        const response = await axios.post(`${TYPE_API}/save`, newType);
         setTypes([...types, response.data]);
         setFormData({ name: '' }); // Reset the form field
       } catch (error) {
@@ -61,7 +61,7 @@ const Type = () => {
           name: formData.name, // Use 'name' field here
           updatedOn: new Date().toISOString(),
         };
-        const response = await axios.put(`${API_URL}/update/${updatedType.id}`, updatedType);
+        const response = await axios.put(`${TYPE_API}/update/${updatedType.id}`, updatedType);
         const updatedTypes = types.map((type, index) =>
           index === editingIndex ? response.data : type
         );
@@ -77,7 +77,7 @@ const Type = () => {
 
   const handleDeleteType = async (index) => {
     try {
-      await axios.delete(`${API_URL}/delete/${types[index].id}`);
+      await axios.delete(`${TYPE_API}/delete/${types[index].id}`);
       const updatedTypes = types.filter((_, i) => i !== index);
       setTypes(updatedTypes);
     } catch (error) {
