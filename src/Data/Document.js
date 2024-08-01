@@ -1,30 +1,55 @@
+import { YEAR_API, CATEGORI_API, TYPE_API, DOCUMENTHEADER_API } from '../API/apiConfig';
 import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusCircleIcon, CheckCircleIcon, EyeIcon } from '@heroicons/react/24/solid';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const Document = () => {
-    const [documents, setDocuments] = useState([
-      { id: 1, title: 'Annual Report', fileNo: 'DOC001', subject: 'Finance', version: '1.0', createdOn: '2024-01-01', updatedOn: '2024-01-15', category: 'Report', year: '2024', type: 'PDF', employeeID: 'EMP001', employeeDepartment: 'Finance', employeeBranch: 'Main Branch', approvalStatus: 'Approved' },
-      { id: 2, title: 'Marketing Plan', fileNo: 'DOC002', subject: 'Marketing', version: '2.1', createdOn: '2024-01-02', updatedOn: '2024-01-16', category: 'Plan', year: '2024', type: 'DOCX', employeeID: 'EMP002', employeeDepartment: 'Marketing', employeeBranch: 'East Branch', approvalStatus: 'Pending' },
-      // Add more dummy data as needed
-    ]);
-
+  const [documents, setDocuments] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
     category: '',
     year: '',
     type: '',
-    files: [],
+    file: null // Added to handle file upload
   });
-
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [categoryOptions] = useState(['Report', 'Plan', 'Policy', 'Procedure', 'Template']);
-  const [yearOptions] = useState(['2022', '2023', '2024', '2025']);
-  const [typeOptions] = useState(['PDF', 'DOCX', 'XLSX', 'PPT']);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [yearOptions, setYearOptions] = useState([]);
+  const [typeOptions, setTypeOptions] = useState([]);
+
+  useEffect(() => {
+    fetchOptions();
+    fetchDocuments();
+  }, []);
+
+  const fetchOptions = async () => {
+    try {
+      const [categoryRes, yearRes, typeRes] = await Promise.all([
+        axios.get(`${CATEGORI_API}/findAll`),
+        axios.get(`${YEAR_API}/findAll`),
+        axios.get(`${TYPE_API}/findAll`)
+      ]);
+      setCategoryOptions(categoryRes.data);
+      setYearOptions(yearRes.data);
+      setTypeOptions(typeRes.data);
+    } catch (error) {
+      console.error('Error fetching options:', error);
+    }
+  };
+
+  const fetchDocuments = async () => {
+    try {
+      const response = await axios.get(`${DOCUMENTHEADER_API}/findAll`);
+      setDocuments(response.data);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -32,73 +57,125 @@ const Document = () => {
   };
 
   const handleFileChange = (e) => {
-    setFormData({ ...formData, files: Array.from(e.target.files) });
+    setFormData({ ...formData, file: e.target.files[0] });
   };
 
-  const handleAddDocument = () => {
-    if (Object.values(formData).every(value => value)) {
+
+
+  const handleAddDocument = async () => {
+    console.log("Adding document with data:", formData); // Debugging statement
+
+    // Check if required fields are filled out
+    if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
       const newDocument = {
-        id: Date.now(),
-        ...formData,
-        fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-        version: '1.0',
-        createdOn: new Date().toISOString().split('T')[0],
-        updatedOn: new Date().toISOString().split('T')[0],
-        employeeID: 'EMP001', // This would typically come from the logged-in user
-        employeeDepartment: 'IT', // This would typically come from the logged-in user
-        employeeBranch: 'Main Branch', // This would typically come from the logged-in user
-        approvalStatus: 'Pending',
+        title: formData.title,
+        fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`, // Auto-generated
+        subject: formData.subject,
+        version: '1.0', // Auto-generated
+        createdOn: new Date().toISOString(), // Auto-generated
+        updatedOn: new Date().toISOString(), // Auto-generated
+        isApproved: false, // Auto-generated
+        category: formData.category ? { id: parseInt(formData.category, 10) } : null,
+        year: formData.year ? { id: parseInt(formData.year, 10) } : null,
+        type: formData.type ? { id: parseInt(formData.type, 10) } : null,
+        employee: null, // Auto-generated
+        department: null, // Auto-generated
+        branch: null // Auto-generated
       };
-      setDocuments([...documents, newDocument]);
-      setFormData({
-        title: '',
-        subject: '',
-        category: '',
-        year: '',
-        type: '',
-        files: [],
-      });
+
+      try {
+        const response = await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        console.log("Document added successfully:", response.data); // Debugging statement
+        setDocuments([...documents, response.data]);
+        setFormData({
+          title: '',
+          subject: '',
+          category: '',
+          year: '',
+          type: '',
+          file: null
+        });
+      } catch (error) {
+        console.error('Error adding document:', error.response ? error.response.data : error.message);
+      }
+    } else {
+      console.error('Form data is incomplete:', formData); // Debugging statement
     }
   };
+
+  const handleSaveEdit = async () => {
+    console.log("Saving edited document with data:", formData); // Debugging statement
+
+    // Check if required fields are filled out
+    if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
+      const updatedDocument = {
+        ...documents[editingIndex],
+        ...formData,
+        updatedOn: new Date().toISOString(),
+        category: formData.category ? { id: parseInt(formData.category, 10) } : null,
+        year: formData.year ? { id: parseInt(formData.year, 10) } : null,
+        type: formData.type ? { id: parseInt(formData.type, 10) } : null,
+        employee: null, // Auto-generated
+        department: null, // Auto-generated
+        branch: null // Auto-generated
+      };
+
+      try {
+        await axios.put(`${DOCUMENTHEADER_API}/update/${updatedDocument.id}`, updatedDocument);
+        console.log("Document updated successfully:", updatedDocument); // Debugging statement
+        const updatedDocuments = documents.map((doc, index) =>
+          index === editingIndex ? updatedDocument : doc
+        );
+        setDocuments(updatedDocuments);
+        setFormData({
+          title: '',
+          subject: '',
+          category: '',
+          year: '',
+          type: '',
+          file: null
+        });
+        setEditingIndex(null);
+      } catch (error) {
+        console.error('Error saving document:', error);
+      }
+    } else {
+      console.error('Form data is incomplete:', formData); // Debugging statement
+    }
+  };
+
+
 
   const handleEditDocument = (index) => {
     setEditingIndex(index);
     const doc = documents[index];
     setFormData({
-      title: doc.title,
-      subject: doc.subject,
-      category: doc.category,
-      year: doc.year,
-      type: doc.type,
-      files: [], // We can't populate this as we don't store the actual files
+      title: doc.title || '',
+      subject: doc.subject || '',
+      category: doc.category ? doc.category.id : '', // Handle null case
+      year: doc.year ? doc.year.id : '', // Handle null case
+      type: doc.type ? doc.type.id : '', // Handle null case
+      file: null // Reset file on edit
     });
   };
 
-  const handleSaveEdit = () => {
-    if (Object.values(formData).every(value => value)) {
-      const updatedDocuments = documents.map((doc, index) =>
-        index === editingIndex ? { ...doc, ...formData, updatedOn: new Date().toISOString().split('T')[0] } : doc
-      );
-      setDocuments(updatedDocuments);
-      setFormData({
-        title: '',
-        subject: '',
-        category: '',
-        year: '',
-        type: '',
-        files: [],
-      });
-      setEditingIndex(null);
+
+  const handleDeleteDocument = async (id) => {
+    try {
+      await axios.delete(`${DOCUMENTHEADER_API}/delete/${id}`);
+      setDocuments(documents.filter(doc => doc.id !== id));
+    } catch (error) {
+      console.error('Error deleting document:', error);
     }
   };
 
-  const handleDeleteDocument = (id) => {
-    setDocuments(documents.filter(doc => doc.id !== id));
-  };
-
   const filteredDocuments = documents.filter(doc =>
-    Object.values(doc).some(value => 
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    Object.values(doc).some(value =>
+      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -135,8 +212,8 @@ const Document = () => {
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Category</option>
-              {categoryOptions.map((category, index) => (
-                <option key={index} value={category}>{category}</option>
+              {categoryOptions.map((category) => (
+                <option key={category.id} value={category.id}>{category.name || 'N/A'}</option>
               ))}
             </select>
             <select
@@ -146,8 +223,8 @@ const Document = () => {
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Year</option>
-              {yearOptions.map((year, index) => (
-                <option key={index} value={year}>{year}</option>
+              {yearOptions.map((year) => (
+                <option key={year.id} value={year.id}>{year.name || 'N/A'}</option>
               ))}
             </select>
             <select
@@ -157,13 +234,12 @@ const Document = () => {
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Type</option>
-              {typeOptions.map((type, index) => (
-                <option key={index} value={type}>{type}</option>
+              {typeOptions.map((type) => (
+                <option key={type.id} value={type.id}>{type.name || 'N/A'}</option>
               ))}
             </select>
             <input
               type="file"
-              multiple
               onChange={handleFileChange}
               className="p-2 border rounded-md outline-none"
             />
@@ -175,7 +251,7 @@ const Document = () => {
               </button>
             ) : (
               <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <CheckCircleIcon className="h-5 w-5 mr-1" /> Save
+                <CheckCircleIcon className="h-5 w-5 mr-1" /> Save Changes
               </button>
             )}
           </div>
@@ -198,8 +274,8 @@ const Document = () => {
           <div className="flex items-center">
             <input
               type="text"
-              placeholder="Search..."
-              className="border rounded-l-md p-1 outline-none"
+              placeholder="Search"
+              className="p-2 border rounded-l-lg outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -238,15 +314,15 @@ const Document = () => {
                   <td className="border p-2">{doc.fileNo}</td>
                   <td className="border p-2">{doc.subject}</td>
                   <td className="border p-2">{doc.version}</td>
-                  <td className="border p-2">{doc.createdOn}</td>
-                  <td className="border p-2">{doc.updatedOn}</td>
-                  <td className="border p-2">{doc.category}</td>
-                  <td className="border p-2">{doc.year}</td>
-                  <td className="border p-2">{doc.type}</td>
-                  <td className="border p-2">{doc.employeeID}</td>
-                  <td className="border p-2">{doc.employeeDepartment}</td>
-                  <td className="border p-2">{doc.employeeBranch}</td>
-                  <td className="border p-2">{doc.approvalStatus}</td>
+                  <td className="border p-2">{new Date(doc.createdOn).toLocaleDateString()}</td>
+                  <td className="border p-2">{new Date(doc.updatedOn).toLocaleDateString()}</td>
+                  <td className="border p-2">{doc.category ? doc.category.name : 'N/A'}</td>
+                  <td className="border p-2">{doc.year ? doc.year.name : 'N/A'}</td>
+                  <td className="border p-2">{doc.type ? doc.type.name : 'N/A'}</td>
+                  <td className="border p-2">{doc.employee ? doc.employee.id : 'N/A'}</td>
+                  <td className="border p-2">{doc.department ? doc.department.name : 'N/A'}</td>
+                  <td className="border p-2">{doc.branch ? doc.branch.name : 'N/A'}</td>
+                  <td className="border p-2">{doc.isApproved ? 'Approved' : 'Not Approved'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditDocument(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
@@ -258,14 +334,14 @@ const Document = () => {
                     </button>
                   </td>
                   <td className="border p-2">
-                  <button>
-                      <EyeIcon className="h-6 w-6 bg-green-400 rounded-xl p-1 text-white">
-                      </EyeIcon>
+                    <button>
+                      <EyeIcon className="h-6 w-6 bg-green-400 rounded-xl p-1 text-white" />
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
 

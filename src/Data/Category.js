@@ -1,3 +1,4 @@
+import { CATEGORI_API } from '../API/apiConfig';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -9,8 +10,6 @@ import {
 } from '@heroicons/react/24/solid';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-const API_URL = 'http://localhost:8080/CategoryMaster';
 
 const Category = () => {
   const [categories, setCategories] = useState([]);
@@ -26,7 +25,7 @@ const Category = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${API_URL}/findAll`);
+      const response = await axios.get(`${CATEGORI_API}/findAll`);
       setCategories(response.data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -44,7 +43,7 @@ const Category = () => {
   const handleAddCategory = async () => {
     if (formData.name.trim()) {
       try {
-        const response = await axios.post(`${API_URL}/save`, formData);
+        const response = await axios.post(`${CATEGORI_API}/save`, formData);
         setCategories([...categories, response.data]);
         setFormData({ name: '' }); // Reset form data
       } catch (error) {
@@ -64,7 +63,7 @@ const Category = () => {
     if (formData.name.trim()) {
       try {
         const response = await axios.put(
-          `${API_URL}/update/${categories[editingIndex].id}`,
+          `${CATEGORI_API}/update/${categories[editingIndex].id}`,
           formData
         );
         const updatedCategories = categories.map((category, index) =>
@@ -83,7 +82,7 @@ const Category = () => {
 
   const handleDeleteCategory = async (id) => {
     try {
-      await axios.delete(`${API_URL}/delete/${id}`);
+      await axios.delete(`${CATEGORI_API}/delete/${id}`);
       setCategories(categories.filter((category) => category.id !== id));
     } catch (error) {
       console.error('Error deleting category:', error);
