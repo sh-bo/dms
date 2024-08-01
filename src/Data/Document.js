@@ -1,7 +1,7 @@
-import { YEAR_API, CATEGORI_API, TYPE_API, DOCUMENTHEADER_API } from '../API/apiConfig';
-import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusCircleIcon, CheckCircleIcon, EyeIcon } from '@heroicons/react/24/solid';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { YEAR_API, CATEGORI_API, TYPE_API, DOCUMENTHEADER_API } from '../API/apiConfig';
+import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusCircleIcon, CheckCircleIcon, EyeIcon } from '@heroicons/react/24/solid';
 
 const Document = () => {
   const [documents, setDocuments] = useState([]);
@@ -11,7 +11,7 @@ const Document = () => {
     category: '',
     year: '',
     type: '',
-    file: null // Added to handle file upload
+    file: null
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
@@ -50,7 +50,7 @@ const Document = () => {
       console.error('Error fetching documents:', error);
     }
   };
-
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -60,37 +60,31 @@ const Document = () => {
     setFormData({ ...formData, file: e.target.files[0] });
   };
 
-
-
   const handleAddDocument = async () => {
-    console.log("Adding document with data:", formData); // Debugging statement
-
-    // Check if required fields are filled out
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
       const newDocument = {
         title: formData.title,
-        fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`, // Auto-generated
+        fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
         subject: formData.subject,
-        version: '1.0', // Auto-generated
-        createdOn: new Date().toISOString(), // Auto-generated
-        updatedOn: new Date().toISOString(), // Auto-generated
-        isApproved: false, // Auto-generated
+        version: '1.0',
+        createdOn: new Date().toISOString(),
+        updatedOn: new Date().toISOString(),
+        isApproved: false,
         category: formData.category ? { id: parseInt(formData.category, 10) } : null,
         year: formData.year ? { id: parseInt(formData.year, 10) } : null,
         type: formData.type ? { id: parseInt(formData.type, 10) } : null,
-        employee: null, // Auto-generated
-        department: null, // Auto-generated
-        branch: null // Auto-generated
+        employee: null,
+        department: null,
+        branch: null
       };
 
       try {
-        const response = await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
+        await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
           headers: {
             'Content-Type': 'application/json'
           }
         });
-        console.log("Document added successfully:", response.data); // Debugging statement
-        setDocuments([...documents, response.data]);
+        fetchDocuments(); // Refresh the document list
         setFormData({
           title: '',
           subject: '',
@@ -99,18 +93,52 @@ const Document = () => {
           type: '',
           file: null
         });
+        setCurrentPage(1); // Optionally, reset pagination
       } catch (error) {
         console.error('Error adding document:', error.response ? error.response.data : error.message);
       }
     } else {
-      console.error('Form data is incomplete:', formData); // Debugging statement
+      console.error('Form data is incomplete:', formData);
     }
   };
 
+  // const handleSaveEdit = async () => {
+  //   if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
+  //     const updatedDocument = {
+  //       ...documents[editingIndex],
+  //       ...formData,
+  //       updatedOn: new Date().toISOString(),
+  //       category: formData.category ? { id: parseInt(formData.category, 10) } : null,
+  //       year: formData.year ? { id: parseInt(formData.year, 10) } : null,
+  //       type: formData.type ? { id: parseInt(formData.type, 10) } : null,
+  //       employee: null,
+  //       department: null,
+  //       branch: null
+  //     };
+  
+  //     try {
+  //       await axios.put(`${DOCUMENTHEADER_API}/update/${updatedDocument.id}`, updatedDocument);
+  //       fetchDocuments(); // Refresh the document list, keeping the current page
+  //       setFormData({
+  //         title: '',
+  //         subject: '',
+  //         category: '',
+  //         year: '',
+  //         type: '',
+  //         file: null
+  //       });
+  //       setEditingIndex(null);
+  //     } catch (error) {
+  //       console.error('Error saving document:', error);
+  //     }
+  //   } else {
+  //     console.error('Form data is incomplete:', formData);
+  //   }
+  // };
+  
   const handleSaveEdit = async () => {
     console.log("Saving edited document with data:", formData); // Debugging statement
-
-    // Check if required fields are filled out
+  
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
       const updatedDocument = {
         ...documents[editingIndex],
@@ -119,18 +147,16 @@ const Document = () => {
         category: formData.category ? { id: parseInt(formData.category, 10) } : null,
         year: formData.year ? { id: parseInt(formData.year, 10) } : null,
         type: formData.type ? { id: parseInt(formData.type, 10) } : null,
-        employee: null, // Auto-generated
-        department: null, // Auto-generated
-        branch: null // Auto-generated
+        employee: null,
+        department: null,
+        branch: null
       };
-
+  
       try {
         await axios.put(`${DOCUMENTHEADER_API}/update/${updatedDocument.id}`, updatedDocument);
-        console.log("Document updated successfully:", updatedDocument); // Debugging statement
-        const updatedDocuments = documents.map((doc, index) =>
-          index === editingIndex ? updatedDocument : doc
-        );
-        setDocuments(updatedDocuments);
+        console.log("Document updated successfully");
+        // Refetch documents after updating
+        fetchDocuments();
         setFormData({
           title: '',
           subject: '',
@@ -144,11 +170,10 @@ const Document = () => {
         console.error('Error saving document:', error);
       }
     } else {
-      console.error('Form data is incomplete:', formData); // Debugging statement
+      console.error('Form data is incomplete:', formData);
     }
   };
-
-
+  
 
   const handleEditDocument = (index) => {
     setEditingIndex(index);
@@ -156,18 +181,17 @@ const Document = () => {
     setFormData({
       title: doc.title || '',
       subject: doc.subject || '',
-      category: doc.category ? doc.category.id : '', // Handle null case
-      year: doc.year ? doc.year.id : '', // Handle null case
-      type: doc.type ? doc.type.id : '', // Handle null case
-      file: null // Reset file on edit
+      category: doc.category ? doc.category.id : '',
+      year: doc.year ? doc.year.id : '',
+      type: doc.type ? doc.type.id : '',
+      file: null
     });
   };
-
 
   const handleDeleteDocument = async (id) => {
     try {
       await axios.delete(`${DOCUMENTHEADER_API}/delete/${id}`);
-      setDocuments(documents.filter(doc => doc.id !== id));
+      fetchDocuments(); // Refresh the document list
     } catch (error) {
       console.error('Error deleting document:', error);
     }
@@ -324,7 +348,7 @@ const Document = () => {
                   <td className="border p-2">{doc.branch ? doc.branch.name : 'N/A'}</td>
                   <td className="border p-2">{doc.isApproved ? 'Approved' : 'Not Approved'}</td>
                   <td className="border p-2">
-                    <button onClick={() => handleEditDocument(index)}>
+                    <button onClick={() => handleEditDocument(documents.findIndex(d => d.id === doc.id))}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
@@ -341,7 +365,6 @@ const Document = () => {
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
 
