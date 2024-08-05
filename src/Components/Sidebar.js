@@ -115,8 +115,6 @@ function Sidebar() {
           <hr className='border-t border-pink-800' />
           <SidebarLink to="/" icon={InboxIcon} text="Dashboard" />
           <hr className='border-t border-pink-800' />
-          <SidebarLink to="/inbox" icon={ArchiveBoxArrowDownIcon} text="Inbox" count={counts.pendingDocument} />
-          <hr className='border-t border-pink-800' />
           <SidebarLink to="/users" icon={UserGroupIcon} text="Users" count={counts.totalUser} />
           <hr className='border-t border-pink-800' />
           <div>
@@ -164,7 +162,7 @@ function Sidebar() {
                 <hr className='border-t border-pink-800 mt-1' />
                 <SidebarLink to="/all-documents" icon={DocumentChartBarIcon} text="All Documents" count={counts.totalDocument} />
                 <hr className='border-t border-pink-800' />
-                <SidebarLink to="/approve-documents" icon={LockClosedIcon} text="Approve Documents" />
+                <SidebarLink to="/approve-documents" icon={LockClosedIcon} text="Approve Documents" count={counts.pendingDocument}/>
               </div>
             )}
           </div>
