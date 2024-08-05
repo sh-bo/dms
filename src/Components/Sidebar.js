@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import axios from 'axios';
 import {
   ArrowLeftIcon,
   InboxIcon,
@@ -20,9 +21,41 @@ import {
 } from "@heroicons/react/24/solid";
 import logo from '../Assets/Logo.png';
 
-function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, departmentCount = 1692, documentCount = 10540, roleCount = 10, yearCount = 12, categoryCount = 268, typeCount = 128 }) {
+function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [counts, setCounts] = useState(() => {
+    const savedCounts = sessionStorage.getItem('counts');
+    return savedCounts ? JSON.parse(savedCounts) : {
+      totalUser: 0,
+      totalDocument: 0,
+      pendingDocument: 0,
+      storageUsed: 0,
+      totalBranches: 0,
+      totalDepartment: 0,
+      totalRoles: 0,
+      documentType: 0,
+      annualYear: 0,
+      totalCategories: 0
+    };
+  });
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/Dashboard/GetAllCountsForDashBoard');
+        setCounts(response.data);
+        sessionStorage.setItem('counts', JSON.stringify(response.data));
+      } catch (error) {
+        console.error('Error fetching dashboard counts:', error);
+      }
+    };
+
+    if (!sessionStorage.getItem('counts')) {
+      fetchCounts();
+    }
+  }, []);
 
   const [isCreateOpen, setCreateOpen] = useState(() => {
     return localStorage.getItem("isCreateOpen") === "true";
@@ -34,6 +67,7 @@ function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, depa
 
   const handleLogout = () => {
     localStorage.removeItem("Token");
+    sessionStorage.removeItem('counts');
     navigate("/auth");
   };
 
@@ -81,9 +115,9 @@ function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, depa
           <hr className='border-t border-pink-800' />
           <SidebarLink to="/" icon={InboxIcon} text="Dashboard" />
           <hr className='border-t border-pink-800' />
-          <SidebarLink to="/inbox" icon={ArchiveBoxArrowDownIcon} text="Inbox" count={messageCount} />
+          <SidebarLink to="/inbox" icon={ArchiveBoxArrowDownIcon} text="Inbox" count={counts.pendingDocument} />
           <hr className='border-t border-pink-800' />
-          <SidebarLink to="/users" icon={UserGroupIcon} text="Users" count={userCount} />
+          <SidebarLink to="/users" icon={UserGroupIcon} text="Users" count={counts.totalUser} />
           <hr className='border-t border-pink-800' />
           <div>
             <button
@@ -99,17 +133,17 @@ function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, depa
             {isCreateOpen && (
               <div className="ml-2 flex flex-col space-y-1">
                 <hr className='border-t border-pink-800 mt-1' />
-                <SidebarLink to="/create-branch" icon={KeyIcon} text="Branch" count={branchCount} />
+                <SidebarLink to="/create-branch" icon={KeyIcon} text="Branch" count={counts.totalBranches} />
                 <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-department" icon={ComputerDesktopIcon} text="Department" count={departmentCount} />
+                <SidebarLink to="/create-department" icon={ComputerDesktopIcon} text="Department" count={counts.totalDepartment} />
                 <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-role" icon={UserCircleIcon} text="Role" count={roleCount} />
+                <SidebarLink to="/create-role" icon={UserCircleIcon} text="Role" count={counts.totalRoles} />
                 <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-type" icon={ClipboardDocumentListIcon} text="Type" count={typeCount} />
+                <SidebarLink to="/create-type" icon={ClipboardDocumentListIcon} text="Type" count={counts.documentType} />
                 <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-year" icon={CalendarDaysIcon} text="Year" count={yearCount} />
+                <SidebarLink to="/create-year" icon={CalendarDaysIcon} text="Year" count={counts.annualYear} />
                 <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-category" icon={ShoppingCartIcon} text="Category" count={categoryCount} />
+                <SidebarLink to="/create-category" icon={ShoppingCartIcon} text="Category" count={counts.totalCategories} />
               </div>
             )}
           </div>
@@ -128,7 +162,7 @@ function Sidebar({ messageCount = 762, userCount = 1872, branchCount = 180, depa
             {isDocumentOpen && (
               <div className="ml-2 flex flex-col space-y-1">
                 <hr className='border-t border-pink-800 mt-1' />
-                <SidebarLink to="/all-documents" icon={DocumentChartBarIcon} text="All Documents" count={documentCount} />
+                <SidebarLink to="/all-documents" icon={DocumentChartBarIcon} text="All Documents" count={counts.totalDocument} />
                 <hr className='border-t border-pink-800' />
                 <SidebarLink to="/approve-documents" icon={LockClosedIcon} text="Approve Documents" />
               </div>
