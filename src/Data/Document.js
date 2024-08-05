@@ -1,7 +1,3 @@
-import { YEAR_API, CATEGORI_API, TYPE_API, DOCUMENTHEADER_API } from '../API/apiConfig';
-import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusCircleIcon, CheckCircleIcon, EyeIcon } from '@heroicons/react/24/solid';
-import { XMarkIcon } from '@heroicons/react/24/outline';
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { YEAR_API, CATEGORI_API, TYPE_API, DOCUMENTHEADER_API, UPLOADFILE_API } from '../API/apiConfig';
@@ -9,9 +5,6 @@ import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, MagnifyingGlassIc
 
 const Document = () => {
   const [documents, setDocuments] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDocument, setSelectedDocument] = useState(null);
-
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
@@ -129,22 +122,9 @@ const Document = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setFormData({ ...formData, file: files });
-  };
-
-  const handleViewClick = (file) => {
-    const url = URL.createObjectURL(file);
-    window.open(url, '_blank');
-  };
-
-  const handleFilePreview = (doc) => {
-    setSelectedDocument(doc);
-    setIsModalOpen(true);
-  };
-
-
+  // const handleFileChange = (e) => {
+  //   setFormData({ ...formData, file: e.target.files[0] });
+  // };
 
   const handleAddDocument = async () => {
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
@@ -163,7 +143,6 @@ const Document = () => {
         department: null,
         branch: null
       };
-
 
       try {
         await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
@@ -189,13 +168,8 @@ const Document = () => {
     }
   };
 
-
-
-
-
   const handleSaveEdit = async () => {
     console.log("Saving edited document with data:", formData); // Debugging statement
-
 
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
       const updatedDocument = {
@@ -209,7 +183,6 @@ const Document = () => {
         department: null,
         branch: null
       };
-
 
       try {
         await axios.put(`${DOCUMENTHEADER_API}/update/${updatedDocument.id}`, updatedDocument);
@@ -232,9 +205,6 @@ const Document = () => {
       console.error('Form data is incomplete:', formData);
     }
   };
-
-
-
 
   const handleEditDocument = (index) => {
     setEditingIndex(index);
@@ -449,8 +419,7 @@ const Document = () => {
                   <td className="border p-2">{doc.employee ? doc.employee.id : 'N/A'}</td>
                   <td className="border p-2">{doc.department ? doc.department.name : ''}</td>
                   <td className="border p-2">{doc.branch ? doc.branch.name : ''}</td>
-                  <td className="border p-2">{doc.approved ? 'Approved' : 'Not Approved'}</td>
-
+                  <td className="border p-2">{doc.isApproved ? 'Approved' : 'Not Approved'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditDocument(documents.findIndex(d => d.id === doc.id))}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
@@ -462,15 +431,13 @@ const Document = () => {
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button onClick={() => handleFilePreview(doc)}>
+                    <button>
                       <EyeIcon className="h-6 w-6 bg-green-400 rounded-xl p-1 text-white" />
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
-
-
           </table>
         </div>
 
@@ -500,56 +467,6 @@ const Document = () => {
             </button>
           </div>
         </div>
-
-        {isModalOpen && selectedDocument && (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 p-4">
-        <div className="bg-white p-6 rounded-lg max-w-3xl w-full mx-auto relative">
-          <button
-            onClick={() => setIsModalOpen(false)}
-            className="absolute top-2 right-2 p-1 rounded-full text-gray-500 hover:text-gray-700"
-          >
-            <XMarkIcon className="h-6 w-6" />
-          </button>
-          <h2 className="text-xl font-semibold mb-4">File Preview</h2>
-          <div className="mb-4">
-            <p className="font-medium">Title: {selectedDocument.title}</p>
-            <p className="font-medium">File No: {selectedDocument.fileNo}</p>
-            <p className="font-medium">Subject: {selectedDocument.subject}</p>
-            <p className="font-medium">Version: {selectedDocument.version}</p>
-            <div className="mt-4">
-              {selectedDocument.file && selectedDocument.file.length > 0 ? (
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Uploaded Files:</h3>
-                  <ul className="space-y-2">
-                    {selectedDocument.file.map((file, index) => (
-                      <li key={index} className="flex justify-between items-center border-b pb-2">
-                        <span className="truncate">{file.name}</span>
-                        <button
-                          className="bg-blue-500 text-white px-3 py-1 rounded flex items-center space-x-1"
-                          onClick={() => handleViewClick(file)}
-                        >
-                          <EyeIcon className="h-5 w-5" />
-                          <span>View</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <p>No files uploaded.</p>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={() => setIsModalOpen(false)}
-            className="bg-red-500 text-white px-4 py-2 rounded mt-4"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    )}
-
       </div>
     </div>
   );
