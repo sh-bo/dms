@@ -1,74 +1,44 @@
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, EyeIcon, MagnifyingGlassIcon, PlusCircleIcon } from '@heroicons/react/24/solid';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { ArrowLeftIcon, ArrowRightIcon, MagnifyingGlassIcon, CheckCircleIcon, XMarkIcon, EyeIcon } from '@heroicons/react/24/solid';
+import { DOCUMENTHEADER_API } from '../API/apiConfig';
 
 const Approve = () => {
-    const [documents, setDocuments] = useState([
-      { id: 1, title: 'Annual Report', fileNo: 'DOC001', subject: 'Finance', version: '1.0', createdOn: '2024-01-01', updatedOn: '2024-01-15', category: 'Report', year: '2024', type: 'PDF', employeeID: 'EMP001', employeeDepartment: 'Finance', employeeBranch: 'Main Branch', approvalStatus: 'Pending' },
-      { id: 2, title: 'Marketing Plan', fileNo: 'DOC002', subject: 'Marketing', version: '2.1', createdOn: '2024-01-02', updatedOn: '2024-01-16', category: 'Plan', year: '2024', type: 'DOCX', employeeID: 'EMP002', employeeDepartment: 'Marketing', employeeBranch: 'East Branch', approvalStatus: 'Pending' },
-      // Add more dummy data as needed
-    ]);
-
-  const [formData, setFormData] = useState({
-    title: '',
-    subject: '',
-    category: '',
-    year: '',
-    type: '',
-    files: [],
-  });
-
+  const [documents, setDocuments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [documentToApprove, setDocumentToApprove] = useState(null);
 
-  const [categoryOptions] = useState(['Report', 'Plan', 'Policy', 'Procedure', 'Template']);
-  const [yearOptions] = useState(['2022', '2023', '2024', '2025']);
-  const [typeOptions] = useState(['PDF', 'DOCX', 'XLSX', 'PPT']);
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleFileChange = (e) => {
-    setFormData({ ...formData, files: Array.from(e.target.files) });
-  };
-
-  const handleAddDocument = () => {
-    if (Object.values(formData).every(value => value)) {
-      const newDocument = {
-        id: Date.now(),
-        ...formData,
-        fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-        version: '1.0',
-        createdOn: new Date().toISOString().split('T')[0],
-        updatedOn: new Date().toISOString().split('T')[0],
-        employeeID: 'EMP001', // This would typically come from the logged-in user
-        employeeDepartment: 'IT', // This would typically come from the logged-in user
-        employeeBranch: 'Main Branch', // This would typically come from the logged-in user
-        approvalStatus: 'Pending',
-      };
-      setDocuments([...documents, newDocument]);
-      setFormData({
-        title: '',
-        subject: '',
-        category: '',
-        year: '',
-        type: '',
-        files: [],
-      });
+  const fetchDocuments = async () => {
+    try {
+      const response = await axios.get(`${DOCUMENTHEADER_API}/getAllPendingStatus`);
+      setDocuments(response.data);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
     }
   };
 
-  const handleApproveDocument = (id) => {
-    setDocuments(documents.map(doc =>
-      doc.id === id ? { ...doc, approvalStatus: 'Approved' } : doc
-    ));
+  const handleUpdateDocumentStatus = async (id, approved) => {
+    try {
+      await axios.put(`${DOCUMENTHEADER_API}/updatestatus/${id}`, { approved });
+      fetchDocuments(); // Refresh the document list
+      setIsConfirmModalOpen(false); // Close the confirmation modal
+    } catch (error) {
+      console.error('Error updating document status:', error);
+    }
   };
 
   const filteredDocuments = documents.filter(doc =>
-    Object.values(doc).some(value => 
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    Object.values(doc).some(value =>
+      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -77,74 +47,9 @@ const Approve = () => {
   const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="p-1">
-      <h1 className="text-xl mb-4 font-semibold">DOCUMENT APPROVAL</h1>
+    <div className="p-4">
+      <h1 className="text-xl mb-4 font-semibold">Document Approval</h1>
       <div className="bg-white p-3 rounded-lg shadow-sm">
-        <div className="mb-4 bg-slate-100 p-4 rounded-lg">
-          <div className="grid grid-cols-3 gap-4">
-            <input
-              type="text"
-              placeholder="Title"
-              name="title"
-              value={formData.title}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            />
-            <input
-              type="text"
-              placeholder="Subject"
-              name="subject"
-              value={formData.subject}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            />
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Category</option>
-              {categoryOptions.map((category, index) => (
-                <option key={index} value={category}>{category}</option>
-              ))}
-            </select>
-            <select
-              name="year"
-              value={formData.year}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Year</option>
-              {yearOptions.map((year, index) => (
-                <option key={index} value={year}>{year}</option>
-              ))}
-            </select>
-            <select
-              name="type"
-              value={formData.type}
-              onChange={handleInputChange}
-              className="p-2 border rounded-md outline-none"
-            >
-              <option value="">Select Type</option>
-              {typeOptions.map((type, index) => (
-                <option key={index} value={type}>{type}</option>
-              ))}
-            </select>
-            <input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="p-2 border rounded-md outline-none"
-            />
-          </div>
-          <div className="mt-3 flex justify-start">
-            <button onClick={handleAddDocument} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-              <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Document
-            </button>
-          </div>
-        </div>
-
         <div className="mb-4 bg-slate-100 p-4 rounded-lg flex justify-between items-center">
           <div className="flex items-center bg-blue-500 rounded-lg">
             <label htmlFor="itemsPerPage" className="mr-2 ml-2 text-white text-sm">Show:</label>
@@ -162,8 +67,8 @@ const Approve = () => {
           <div className="flex items-center">
             <input
               type="text"
-              placeholder="Search..."
-              className="border rounded-l-md p-1 outline-none"
+              placeholder="Search"
+              className="p-2 border rounded-l-lg outline-none"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -189,8 +94,8 @@ const Approve = () => {
                 <th className="border p-2 text-left">Department</th>
                 <th className="border p-2 text-left">Branch</th>
                 <th className="border p-2 text-left">Approval</th>
-                <th className="border p-2 text-left">View</th>
                 <th className="border p-2 text-left">Approve</th>
+                <th className="border p-2 text-left">View</th>
               </tr>
             </thead>
             <tbody>
@@ -201,27 +106,24 @@ const Approve = () => {
                   <td className="border p-2">{doc.fileNo}</td>
                   <td className="border p-2">{doc.subject}</td>
                   <td className="border p-2">{doc.version}</td>
-                  <td className="border p-2">{doc.createdOn}</td>
-                  <td className="border p-2">{doc.updatedOn}</td>
-                  <td className="border p-2">{doc.category}</td>
-                  <td className="border p-2">{doc.year}</td>
-                  <td className="border p-2">{doc.type}</td>
-                  <td className="border p-2">{doc.employeeID}</td>
-                  <td className="border p-2">{doc.employeeDepartment}</td>
-                  <td className="border p-2">{doc.employeeBranch}</td>
-                  <td className="border p-2">{doc.approvalStatus}</td>
+                  <td className="border p-2">{new Date(doc.createdOn).toLocaleDateString()}</td>
+                  <td className="border p-2">{new Date(doc.updatedOn).toLocaleDateString()}</td>
+                  <td className="border p-2">{doc.category ? doc.category.name : ''}</td>
+                  <td className="border p-2">{doc.year ? doc.year.name : ''}</td>
+                  <td className="border p-2">{doc.type ? doc.type.name : ''}</td>
+                  <td className="border p-2">{doc.employee ? doc.employee.id : 'N/A'}</td>
+                  <td className="border p-2">{doc.department ? doc.department.name : ''}</td>
+                  <td className="border p-2">{doc.branch ? doc.branch.name : ''}</td>
+                  <td className="border p-2">{doc.approved ? 'Approved' : 'Not Approved'}</td>
                   <td className="border p-2">
-                  <button>
-                      <EyeIcon className="h-6 w-6 bg-yellow-400 rounded-xl p-1 text-white">
-                      </EyeIcon>
+                    <button onClick={() => { setDocumentToApprove(doc); setIsConfirmModalOpen(true); }}>
+                      <CheckCircleIcon className="h-6 w-6 text-white bg-green-500 rounded-xl p-0.5" />
                     </button>
                   </td>
                   <td className="border p-2">
-                    {doc.approvalStatus === 'Pending' && (
-                      <button onClick={() => handleApproveDocument(doc.id)}>
-                        <CheckCircleIcon className="h-6 w-6 text-white bg-green-500 rounded-xl p-0.5 ml-5" />
-                      </button>
-                    )}
+                    <button onClick={() => { setSelectedDocument(doc); setIsModalOpen(true); }}>
+                      <EyeIcon className="h-6 w-6 bg-yellow-500 rounded-xl p-1 text-white" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -255,6 +157,60 @@ const Approve = () => {
             </button>
           </div>
         </div>
+
+        {isModalOpen && selectedDocument && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 p-4">
+            <div className="bg-white p-6 rounded-lg max-w-lg w-full">
+              <h2 className="text-xl mb-4 font-semibold">Document Details</h2>
+              <div>
+                <p><strong>Title:</strong> {selectedDocument.title}</p>
+                <p><strong>File No:</strong> {selectedDocument.fileNo}</p>
+                <p><strong>Subject:</strong> {selectedDocument.subject}</p>
+                <p><strong>Version:</strong> {selectedDocument.version}</p>
+                <p><strong>Created On:</strong> {new Date(selectedDocument.createdOn).toLocaleDateString()}</p>
+                <p><strong>Updated On:</strong> {new Date(selectedDocument.updatedOn).toLocaleDateString()}</p>
+                <p><strong>Category:</strong> {selectedDocument.category ? selectedDocument.category.name : ''}</p>
+                <p><strong>Year:</strong> {selectedDocument.year ? selectedDocument.year.name : ''}</p>
+                <p><strong>Type:</strong> {selectedDocument.type ? selectedDocument.type.name : ''}</p>
+                <p><strong>Employee:</strong> {selectedDocument.employee ? selectedDocument.employee.id : 'N/A'}</p>
+                <p><strong>Department:</strong> {selectedDocument.department ? selectedDocument.department.name : ''}</p>
+                <p><strong>Branch:</strong> {selectedDocument.branch ? selectedDocument.branch.name : ''}</p>
+                <p><strong>Approval Status:</strong> {selectedDocument.approved ? 'Approved' : 'Not Approved'}</p>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="bg-red-500 text-white px-4 py-2 rounded mr-2"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isConfirmModalOpen && documentToApprove && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 p-4">
+            <div className="bg-white p-6 rounded-lg max-w-md w-full">
+              <h2 className="text-xl mb-4 font-semibold">Confirm Approval</h2>
+              <p>Are you sure you want to approve the document titled "{documentToApprove.title}"?</p>
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setIsConfirmModalOpen(false)}
+                  className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleUpdateDocumentStatus(documentToApprove.id, true)}
+                  className="bg-green-500 text-white px-4 py-2 rounded"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
