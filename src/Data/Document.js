@@ -4,6 +4,8 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { YEAR_API, CATEGORI_API, TYPE_API, DOCUMENTHEADER_API, UPLOADFILE_API } from '../API/apiConfig';
+import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusCircleIcon, CheckCircleIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
 const Document = () => {
   const [documents, setDocuments] = useState([]);
@@ -16,7 +18,7 @@ const Document = () => {
     category: '',
     year: '',
     type: '',
-    file: null // Added to handle file upload
+    file: null
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
@@ -26,11 +28,76 @@ const Document = () => {
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
   const [typeOptions, setTypeOptions] = useState([]);
+  const [uploadedFileNames, setUploadedFileNames] = useState([]);
+  const [filePaths, setFilePaths] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+
+
 
   useEffect(() => {
     fetchOptions();
     fetchDocuments();
   }, []);
+
+  // This will store the file name or metadata
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter(file => file.type === 'application/pdf');
+    if (validFiles.length !== files.length) {
+      alert('Only PDF files are allowed.');
+    }
+    setSelectedFiles(validFiles);
+    setFilePaths(validFiles.map(file => file.name)); // Track file names
+  };
+
+  const handleUpload = async () => {
+    if (selectedFiles.length === 0) {
+      alert('Please select files.');
+      return;
+    }
+
+    const formData = new FormData();
+    selectedFiles.forEach(file => {
+      formData.append('files', file);
+    });
+
+    try {
+      const response = await fetch(`${UPLOADFILE_API}/File`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.text();
+        alert(`Files uploaded successfully: ${result}`);
+        setUploadedFileNames([...uploadedFileNames, ...selectedFiles.map(file => file.name)]);
+        setSelectedFiles([]);
+      } else {
+        const errorText = await response.text();
+        alert(`Failed to upload files: ${errorText}`);
+        console.error(`Failed to upload files: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      alert('Error uploading files');
+    }
+  };
+
+  const handleDiscard = (index) => {
+    const updatedFileNames = uploadedFileNames.filter((_, i) => i !== index);
+    setUploadedFileNames(updatedFileNames);
+  };
+
+  const getFileStyle = (fileName) => {
+    if (fileName.endsWith('.pdf')) {
+      return { color: '#4a5568', backgroundColor: '#e2e8f0' }; // Blue-grey for PDFs
+    } else if (fileName.endsWith('.docx')) {
+      return { color: '#2d3748', backgroundColor: '#f7fafc' }; // Darker grey for DOCX
+    }
+    return { color: '#4a5568', backgroundColor: '#f1f5f9' }; // Default style
+  };
+
+
 
   const fetchOptions = async () => {
     try {
@@ -55,6 +122,7 @@ const Document = () => {
       console.error('Error fetching documents:', error);
     }
   };
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -86,7 +154,7 @@ const Document = () => {
         subject: formData.subject,
         version: '1.0',
         createdOn: new Date().toISOString(),
-        updatedOn: new Date().toISOString(),
+        updatedOn: '',
         isApproved: false,
         category: formData.category ? { id: parseInt(formData.category, 10) } : null,
         year: formData.year ? { id: parseInt(formData.year, 10) } : null,
@@ -95,6 +163,7 @@ const Document = () => {
         department: null,
         branch: null
       };
+
 
       try {
         await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
@@ -116,7 +185,7 @@ const Document = () => {
         console.error('Error adding document:', error.response ? error.response.data : error.message);
       }
     } else {
-      console.error('Form data is incomplete:', formData);
+      console.error('Form data is incomplete:', formData); // Debugging statement
     }
   };
 
@@ -126,6 +195,7 @@ const Document = () => {
 
   const handleSaveEdit = async () => {
     console.log("Saving edited document with data:", formData); // Debugging statement
+
 
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
       const updatedDocument = {
@@ -139,6 +209,7 @@ const Document = () => {
         department: null,
         branch: null
       };
+
 
       try {
         await axios.put(`${DOCUMENTHEADER_API}/update/${updatedDocument.id}`, updatedDocument);
@@ -171,18 +242,17 @@ const Document = () => {
     setFormData({
       title: doc.title || '',
       subject: doc.subject || '',
-      category: doc.category ? doc.category.id : '', // Handle null case
-      year: doc.year ? doc.year.id : '', // Handle null case
-      type: doc.type ? doc.type.id : '', // Handle null case
-      file: null // Reset file on edit
+      category: doc.category ? doc.category.id : '',
+      year: doc.year ? doc.year.id : '',
+      type: doc.type ? doc.type.id : '',
+      file: null
     });
   };
-
 
   const handleDeleteDocument = async (id) => {
     try {
       await axios.delete(`${DOCUMENTHEADER_API}/delete/${id}`);
-      setDocuments(documents.filter(doc => doc.id !== id));
+      fetchDocuments(); // Refresh the document list
     } catch (error) {
       console.error('Error deleting document:', error);
     }
@@ -253,11 +323,22 @@ const Document = () => {
                 <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </select>
-            <input
-              type="file"
-              onChange={handleFileChange}
-              className="p-2 border rounded-md outline-none"
-            />
+            <div>
+              <div className='flex'>
+                <button onClick={handleUpload}
+                  className="bg-rose-900 mr-2 text-white rounded-xl p-2">
+                  Upload
+                </button>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  multiple
+                  onChange={handleFileChange}
+                  className="p-2 border rounded-md outline-none w-full"
+                />
+
+              </div>
+            </div>
           </div>
           <div className="mt-3 flex justify-start">
             {editingIndex === null ? (
@@ -272,7 +353,38 @@ const Document = () => {
           </div>
         </div>
 
-        <div className="mb-4 bg-slate-100 p-4 rounded-lg flex justify-between items-center">
+        <>
+          {uploadedFileNames.length > 0 && (
+            <div style={{ padding: '1rem', backgroundColor: '#f1f5f9', borderRadius: '0.5rem' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                {uploadedFileNames.map((fileName, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.5rem',
+                      borderRadius: '0.25rem',
+                      border: '1px solid #e2e8f0',
+                      ...getFileStyle(fileName), // Apply the style based on filename
+                    }}
+                  >
+                    <span style={{ marginRight: '0.5rem' }}>{fileName}</span>
+                    <button
+                      style={{ color: '#ef4444', cursor: 'pointer', background: 'none', border: 'none' }}
+                      onClick={() => handleDiscard(index)}
+                    >
+                      <XMarkIcon style={{ width: '1.25rem', height: '1.25rem' }} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+
+        <div className="my-4 bg-slate-100 p-4 rounded-lg flex justify-between items-center">
           <div className="flex items-center bg-blue-500 rounded-lg">
             <label htmlFor="itemsPerPage" className="mr-2 ml-2 text-white text-sm">Show:</label>
             <select
@@ -340,7 +452,7 @@ const Document = () => {
                   <td className="border p-2">{doc.approved ? 'Approved' : 'Not Approved'}</td>
 
                   <td className="border p-2">
-                    <button onClick={() => handleEditDocument(index)}>
+                    <button onClick={() => handleEditDocument(documents.findIndex(d => d.id === doc.id))}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>

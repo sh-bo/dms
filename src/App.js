@@ -11,6 +11,7 @@ import Years from './Pages/Years';
 import Categories from './Pages/Categories';
 import Documents from './Pages/Documents';
 import Approves from './Pages/Approves';
+import LoginPage from './Pages/LoginPage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
           <Route path="/create-category" element={<Categories />}/>
           <Route path="/all-documents" element={<Documents />}/>
           <Route path="/approve-documents" element={<Approves />}/>
+          <Route path="/auth" element={<LoginPage />}/>
         </Routes>
       </div>
     </BrowserRouter>
