@@ -9,7 +9,6 @@ import {
   UserGroupIcon,
   BuildingOfficeIcon,
   DocumentTextIcon,
-  ArchiveBoxArrowDownIcon,
   KeyIcon,
   ComputerDesktopIcon,
   DocumentChartBarIcon,
@@ -20,6 +19,8 @@ import {
   ClipboardDocumentListIcon
 } from "@heroicons/react/24/solid";
 import logo from '../Assets/Logo.png';
+
+const tokenKey = 'tokenKey';
 
 function Sidebar() {
   const location = useLocation();
@@ -44,7 +45,10 @@ function Sidebar() {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/Dashboard/GetAllCountsForDashBoard');
+        const token = localStorage.getItem(tokenKey); // Get token from local storage
+        const response = await axios.get('http://localhost:8080/Dashboard/GetAllCountsForDashBoard', {
+          headers: { Authorization: `Bearer ${token}` } // Attach token in headers
+        });
         setCounts(response.data);
         sessionStorage.setItem('counts', JSON.stringify(response.data));
       } catch (error) {
@@ -66,7 +70,7 @@ function Sidebar() {
   });
 
   const handleLogout = () => {
-    localStorage.removeItem("Token");
+    localStorage.removeItem(tokenKey);
     sessionStorage.removeItem('counts');
     navigate("/auth");
   };

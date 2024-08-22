@@ -1,5 +1,5 @@
-import { DEPAETMENT_API, BRANCH_API } from '../API/apiConfig';
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -11,7 +11,7 @@ import {
   PlusCircleIcon,
   TrashIcon
 } from '@heroicons/react/24/solid';
-import axios from 'axios';
+import { DEPAETMENT_API, BRANCH_API } from '../API/apiConfig';
 
 const Department = () => {
   const [branches, setBranches] = useState([]);
@@ -26,7 +26,10 @@ const Department = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
-  const [toggleIndex, setToggleIndex] = useState(null);
+  const [toggleDepartment, setToggleDepartment] = useState(null);
+
+  // Retrieve token from localStorage
+  const token = localStorage.getItem('tokenKey');
 
   useEffect(() => {
     fetchBranches();
@@ -35,7 +38,11 @@ const Department = () => {
 
   const fetchBranches = async () => {
     try {
-      const response = await axios.get(`${BRANCH_API}/findAll`);
+      const response = await axios.get(`${BRANCH_API}/findAll`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       setBranches(response.data);
     } catch (error) {
       console.error('Error fetching branches:', error);
@@ -44,7 +51,11 @@ const Department = () => {
 
   const fetchDepartments = async () => {
     try {
-      const response = await axios.get(`${DEPAETMENT_API}/findAll`);
+      const response = await axios.get(`${DEPAETMENT_API}/findAll`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       setDepartments(response.data);
     } catch (error) {
       console.error('Error fetching departments:', error);
@@ -71,22 +82,16 @@ const Department = () => {
           updatedOn: new Date().toISOString(),
           isActive: formData.isActive ? 1 : 0,
         };
-        console.log('Add Department Payload:', newDepartment);
         const response = await axios.post(`${DEPAETMENT_API}/save`, newDepartment, {
           headers: {
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
         });
         setDepartments([...departments, response.data]);
         setFormData({ name: '', branch: null, isActive: true });
       } catch (error) {
         console.error('Error adding department:', error);
-        if (error.response) {
-          console.error('Error response:', error.response.data);
-        }
-        if (error.request) {
-          console.error('Error request:', error.request);
-        }
       }
     } else {
       console.error('Form data is incomplete');
@@ -106,8 +111,12 @@ const Department = () => {
           updatedOn: new Date().toISOString(),
           isActive: formData.isActive ? 1 : 0,
         };
-        console.log('Update Department Payload:', updatedDepartment);
-        const response = await axios.put(`${DEPAETMENT_API}/update/${formData.id}`, updatedDepartment);
+        const response = await axios.put(`${DEPAETMENT_API}/update/${formData.id}`, updatedDepartment, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
         const updatedDepartments = departments.map((department, index) =>
           index === editingIndex ? response.data : department
         );
@@ -116,12 +125,6 @@ const Department = () => {
         setEditingIndex(null);
       } catch (error) {
         console.error('Error updating department:', error);
-        if (error.response) {
-          console.error('Error response:', error.response.data);
-        }
-        if (error.request) {
-          console.error('Error request:', error.request);
-        }
       }
     } else {
       console.error('Form data is incomplete');
@@ -130,61 +133,58 @@ const Department = () => {
 
   const handleDeleteDepartment = async (index) => {
     try {
-      await axios.delete(`${DEPAETMENT_API}/delete/${departments[index].id}`);
+      await axios.delete(`${DEPAETMENT_API}/delete/${departments[index].id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       const updatedDepartments = departments.filter((_, i) => i !== index);
       setDepartments(updatedDepartments);
     } catch (error) {
       console.error('Error deleting department:', error);
-      if (error.response) {
-        console.error('Error response:', error.response.data);
-      }
-      if (error.request) {
-        console.error('Error request:', error.request);
-      }
     }
   };
 
   const handleToggleActive = (department) => {
-    setToggleIndex(department); // Set the department to toggle
-    setModalVisible(true); // Show the modal
+    setToggleDepartment(department);
+    setModalVisible(true);
   };
-  
+
   const confirmToggleActiveStatus = async () => {
-    if (toggleIndex) { // Check if department is set
+    if (toggleDepartment) {
       try {
         const updatedDepartment = {
-          ...toggleIndex,
-          isActive: toggleIndex.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
+          ...toggleDepartment,
+          isActive: toggleDepartment.isActive === 1 ? 0 : 1,
           updatedOn: new Date().toISOString(),
         };
-  
-        console.log('Sending payload:', updatedDepartment); // Debug log
-  
         const response = await axios.put(
-          `${DEPAETMENT_API}/update/${updatedDepartment.id}`, 
+          `${DEPAETMENT_API}/update/${updatedDepartment.id}`,
           updatedDepartment,
           {
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
           }
         );
-  
         const updatedDepartments = departments.map(dept =>
           dept.id === updatedDepartment.id ? response.data : dept
         );
         setDepartments(updatedDepartments);
         setModalVisible(false);
-        setToggleIndex(null);
+        setToggleDepartment(null);
       } catch (error) {
-        console.error('Error toggling department status:', error.response ? error.response.data : error.message);
+        console.error('Error toggling department status:', error);
       }
     } else {
-      console.error('Department to toggle is not defined or null');
+      console.error('No department selected for status toggle');
     }
   };
-  
+
   const filteredDepartments = departments.filter(department =>
     Object.values(department).some(value =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -196,6 +196,7 @@ const Department = () => {
     <div className="p-4">
       <h1 className="text-xl mb-4 font-semibold">DEPARTMENTS</h1>
       <div className="bg-white p-4 rounded-lg shadow-sm">
+        {/* Form Section */}
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
           <div className="grid grid-cols-2 gap-4">
             <input
@@ -231,6 +232,7 @@ const Department = () => {
           </div>
         </div>
 
+        {/* Search and Items Per Page Section */}
         <div className="mb-4 bg-slate-100 p-4 rounded-lg flex justify-between items-center">
           <div className="flex items-center bg-blue-500 rounded-lg">
             <label htmlFor="itemsPerPage" className="mr-2 ml-2 text-white text-sm">Show:</label>
@@ -257,6 +259,7 @@ const Department = () => {
           </div>
         </div>
 
+        {/* Departments Table */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border">
             <thead>
@@ -280,7 +283,7 @@ const Department = () => {
                   <td className="border p-2">{department.branch?.name || ''}</td>
                   <td className="border p-2">{new Date(department.createdOn).toLocaleDateString()}</td>
                   <td className="border p-2">{new Date(department.updatedOn).toLocaleDateString()}</td>
-                  <td className="border p-2">{department.isActive ? 'Active' : 'Inactive'}</td>
+                  <td className="border p-2">{department.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditDepartment(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
@@ -309,6 +312,7 @@ const Department = () => {
           </table>
         </div>
 
+        {/* Pagination Controls */}
         <div className="flex justify-between items-center mt-4">
           <div>
             <span className="text-sm text-gray-700">
@@ -319,7 +323,7 @@ const Department = () => {
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="bg-slate-200 px-3 py-1 rounded mr-3"
+              className="bg-slate-200 px-3 py-1 rounded mr-3 disabled:opacity-50"
             >
               <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
               Previous
@@ -328,7 +332,7 @@ const Department = () => {
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="bg-slate-200 px-3 py-1 rounded ml-3"
+              className="bg-slate-200 px-3 py-1 rounded ml-3 disabled:opacity-50"
             >
               Next
               <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
@@ -337,22 +341,24 @@ const Department = () => {
         </div>
       </div>
 
+      {/* Modal for Confirming Status Change */}
       {modalVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
-          <div className="bg-white p-4 rounded-lg shadow-lg">
-            <p>Are you sure you want to change the status of this department?</p>
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={confirmToggleActiveStatus}
-                className="bg-green-500 text-white rounded-lg p-2"
-              >
-                Confirm
-              </button>
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Confirm Status Change</h2>
+            <p>Are you sure you want to {toggleDepartment.isActive === 1 ? 'deactivate' : 'activate'} the department <strong>{toggleDepartment.name}</strong>?</p>
+            <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setModalVisible(false)}
-                className="bg-red-500 text-white rounded-lg p-2 ml-2"
+                className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
               >
                 Cancel
+              </button>
+              <button
+                onClick={confirmToggleActiveStatus}
+                className="bg-blue-500 text-white rounded-lg px-4 py-2"
+              >
+                Confirm
               </button>
             </div>
           </div>

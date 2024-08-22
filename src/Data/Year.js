@@ -1,9 +1,12 @@
 import { YEAR_API } from '../API/apiConfig';
-import {ArrowLeftIcon, ArrowRightIcon,CheckCircleIcon,PencilIcon,PlusCircleIcon,TrashIcon,MagnifyingGlassIcon,} from '@heroicons/react/24/solid';
+import {
+  ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon,
+  PlusCircleIcon, TrashIcon, MagnifyingGlassIcon
+} from '@heroicons/react/24/solid';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-
+const tokenKey = 'tokenKey'; 
 
 const Year = () => {
   const [years, setYears] = useState([]);
@@ -20,7 +23,10 @@ const Year = () => {
 
   const fetchYears = async () => {
     try {
-      const response = await axios.get(`${YEAR_API}/findAll`);
+      const token = localStorage.getItem(tokenKey);
+      const response = await axios.get(`${YEAR_API}/findAll`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setYears(response.data);
     } catch (error) {
       console.error('Error fetching years:', error);
@@ -35,13 +41,15 @@ const Year = () => {
   const handleAddYear = async () => {
     if (formData.year) {
       const newYear = {
-        name: formData.year, // Adjust field name here
+        name: formData.year,
       };
 
       try {
-        await axios.post(`${YEAR_API}/save`, newYear);
-        // Reload the years list to include the new entry
-        fetchYears();
+        const token = localStorage.getItem(tokenKey);
+        const response = await axios.post(`${YEAR_API}/save`, newYear, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setYears([...years, response.data]); // Add the new year to the list
         setFormData({ year: '' }); // Reset the form field
       } catch (error) {
         console.error('Error adding year:', error.response ? error.response.data : error.message);
@@ -51,7 +59,7 @@ const Year = () => {
 
   const handleEditYear = (index) => {
     setEditingIndex(index);
-    setFormData({ year: years[index].name }); // Use 'name' instead of 'year'
+    setFormData({ year: years[index].name });
   };
 
   const handleSaveEdit = async () => {
@@ -59,13 +67,17 @@ const Year = () => {
       try {
         const updatedYear = {
           ...years[editingIndex],
-          name: formData.year, // Use 'name' instead of 'year'
+          name: formData.year,
           updatedOn: new Date().toISOString(),
         };
-        await axios.put(`${YEAR_API}/update/${updatedYear.id}`, updatedYear);
-        // Reload the years list to include the updated entry
-        fetchYears();
-        setFormData({ year: '' }); // Reset the form field
+        const token = localStorage.getItem(tokenKey);
+        await axios.put(`${YEAR_API}/update/${updatedYear.id}`, updatedYear, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setYears(years.map((year, index) =>
+          index === editingIndex ? updatedYear : year
+        ));
+        setFormData({ year: '' });
         setEditingIndex(null);
       } catch (error) {
         console.error('Error updating year:', error.response ? error.response.data : error.message);
@@ -75,9 +87,11 @@ const Year = () => {
 
   const handleDeleteYear = async (index) => {
     try {
-      await axios.delete(`${YEAR_API}/delete/${years[index].id}`);
-      // Reload the years list after deletion
-      fetchYears();
+      const token = localStorage.getItem(tokenKey);
+      await axios.delete(`${YEAR_API}/delete/${years[index].id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setYears(years.filter((_, i) => i !== index));
     } catch (error) {
       console.error('Error deleting year:', error.response ? error.response.data : error.message);
     }
@@ -163,7 +177,7 @@ const Year = () => {
               {paginatedYears.map((year, index) => (
                 <tr key={year.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td className="border p-2">{year.name}</td> {/* Changed from year.year to year.name */}
+                  <td className="border p-2">{year.name}</td>
                   <td className="border p-2">{year.createdOn}</td>
                   <td className="border p-2">{year.updatedOn}</td>
                   <td className="border p-2">
