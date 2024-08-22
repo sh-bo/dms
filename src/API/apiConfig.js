@@ -1,5 +1,6 @@
 const API_HOST = 'http://localhost:8080';
 
+
 export const API_URL = API_HOST;
 export const BRANCH_API = `${API_HOST}/branchmaster`;
 export const CATEGORI_API = `${API_HOST}/CategoryMaster`;
