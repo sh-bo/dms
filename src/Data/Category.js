@@ -11,6 +11,8 @@ import {
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+const tokenKey = 'tokenKey'; // Correct token key name
+
 const Category = () => {
   const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({ name: '' });
@@ -25,7 +27,11 @@ const Category = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${CATEGORI_API}/findAll`);
+      const response = await axios.get(`${CATEGORI_API}/findAll`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+        },
+      });
       setCategories(response.data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -43,7 +49,11 @@ const Category = () => {
   const handleAddCategory = async () => {
     if (formData.name.trim()) {
       try {
-        const response = await axios.post(`${CATEGORI_API}/save`, formData);
+        const response = await axios.post(`${CATEGORI_API}/save`, formData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+          },
+        });
         setCategories([...categories, response.data]);
         setFormData({ name: '' }); // Reset form data
       } catch (error) {
@@ -64,7 +74,12 @@ const Category = () => {
       try {
         const response = await axios.put(
           `${CATEGORI_API}/update/${categories[editingIndex].id}`,
-          formData
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+            },
+          }
         );
         const updatedCategories = categories.map((category, index) =>
           index === editingIndex ? response.data : category
@@ -82,7 +97,11 @@ const Category = () => {
 
   const handleDeleteCategory = async (id) => {
     try {
-      await axios.delete(`${CATEGORI_API}/delete/${id}`);
+      await axios.delete(`${CATEGORI_API}/delete/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+        },
+      });
       setCategories(categories.filter((category) => category.id !== id));
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -218,9 +237,7 @@ const Category = () => {
               <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
               Previous
             </button>
-            <span className="text-sm text-gray-700">
-              Page {currentPage} of {totalPages}
-            </span>
+            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}

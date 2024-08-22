@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
 
+const tokenKey = 'tokenKey'; // Your token key in localStorage
 const API_URL = 'http://localhost:8080/branchmaster';
 
 const Branch = () => {
@@ -31,19 +32,31 @@ const Branch = () => {
 
   const fetchBranches = async () => {
     try {
-      const response = await axios.get(`${API_URL}/findAll`);
+      const token = localStorage.getItem(tokenKey);
+      const response = await axios.get(`${API_URL}/findAll`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setBranches(response.data);
     } catch (error) {
       console.error('Error fetching branches:', error);
+      setError('Failed to fetch branches. Please check your authorization.');
     }
   };
 
   const fetchBranchById = async (id) => {
     try {
-      const response = await axios.get(`${API_URL}/findById/${id}`);
+      const token = localStorage.getItem(tokenKey);
+      const response = await axios.get(`${API_URL}/findById/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setFormData(response.data);
     } catch (error) {
       console.error('Error fetching branch by ID:', error);
+      setError('Failed to fetch branch. Please check your authorization.');
     }
   };
 
@@ -53,48 +66,53 @@ const Branch = () => {
   };
 
   const handleAddBranch = async () => {
-    // Check if all form fields are filled
     if (formData.name && formData.address) {
       try {
-        // Prepare new branch data
+        const token = localStorage.getItem(tokenKey);
         const newBranch = {
           ...formData,
           createdOn: new Date().toISOString().split('T')[0],
           updatedOn: new Date().toISOString().split('T')[0],
         };
 
-        // Make POST request to save the new branch
-        const response = await axios.post(`${API_URL}/save`, newBranch);
+        const response = await axios.post(`${API_URL}/save`, newBranch, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        // Update branches list with the newly created branch
         setBranches([...branches, response.data]);
-
-        // Reset form data
         setFormData({ name: '', address: '' });
         setError('');
       } catch (error) {
-        // Handle any errors
         console.error('Error adding branch:', error);
-        setError('Failed to add branch. Please try again.');
+        setError('Failed to add branch. Please check your authorization.');
       }
     } else {
       setError('All fields are required.');
     }
   };
+
   const handleEditBranch = async (index) => {
     setEditingIndex(index);
     const branchId = branches[index].id;
-    await fetchBranchById(branchId); // Fetch the branch details to edit
+    await fetchBranchById(branchId);
   };
 
   const handleSaveEdit = async () => {
     if (Object.values(formData).every(value => value)) {
       try {
+        const token = localStorage.getItem(tokenKey);
         const updatedBranch = {
           ...formData,
           updatedOn: new Date().toISOString().split('T')[0],
         };
-        const response = await axios.put(`${API_URL}/update/${formData.id}`, updatedBranch);
+        const response = await axios.put(`${API_URL}/update/${formData.id}`, updatedBranch, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         const updatedBranches = branches.map((branch, index) =>
           index === editingIndex ? response.data : branch
         );
@@ -103,17 +121,24 @@ const Branch = () => {
         setEditingIndex(null);
       } catch (error) {
         console.error('Error updating branch:', error);
+        setError('Failed to update branch. Please check your authorization.');
       }
     }
   };
 
   const handleDeleteBranch = async (index) => {
     try {
-      await axios.delete(`${API_URL}/delete/${branches[index].id}`);
+      const token = localStorage.getItem(tokenKey);
+      await axios.delete(`${API_URL}/delete/${branches[index].id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const updatedBranches = branches.filter((_, i) => i !== index);
       setBranches(updatedBranches);
     } catch (error) {
       console.error('Error deleting branch:', error);
+      setError('Failed to delete branch. Please check your authorization.');
     }
   };
 
@@ -211,13 +236,13 @@ const Branch = () => {
                   <td className="border p-2">{branch.createdOn}</td>
                   <td className="border p-2">{branch.updatedOn}</td>
                   <td className="border p-2">
-                    <button onClick={() => handleEditBranch(index)}>
+                    <button onClick={() => handleEditBranch((currentPage - 1) * itemsPerPage + index)} className="text-blue-500">
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button onClick={() => handleDeleteBranch(index)}>
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
+                    <button onClick={() => handleDeleteBranch((currentPage - 1) * itemsPerPage + index)} className="text-red-500">
+                      <TrashIcon className="h-6 w-6 text-white bg-red-400 rounded-xl p-1" />
                     </button>
                   </td>
                 </tr>
@@ -255,6 +280,7 @@ const Branch = () => {
           </div>
         </div>
       </div>
+      {error && <div className="text-red-500 mt-4">{error}</div>}
     </div>
   );
 };

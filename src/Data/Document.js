@@ -27,14 +27,13 @@ const Document = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
 
-
+  const token = localStorage.getItem('tokenKey'); // Retrieve token from local storage
 
   useEffect(() => {
     fetchOptions();
     fetchDocuments();
   }, []);
 
-  // This will store the file name or metadata
   const handleFileChange = (event) => {
     const files = Array.from(event.target.files);
     const validFiles = files.filter(file => file.type === 'application/pdf');
@@ -60,6 +59,9 @@ const Document = () => {
       const response = await fetch(`${UPLOADFILE_API}/File`, {
         method: 'POST',
         body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}` // Add token to the headers
+        }
       });
 
       if (response.ok) {
@@ -92,14 +94,24 @@ const Document = () => {
     return { color: '#4a5568', backgroundColor: '#f1f5f9' }; // Default style
   };
 
-
-
   const fetchOptions = async () => {
     try {
       const [categoryRes, yearRes, typeRes] = await Promise.all([
-        axios.get(`${CATEGORI_API}/findAll`),
-        axios.get(`${YEAR_API}/findAll`),
-        axios.get(`${TYPE_API}/findAll`)
+        axios.get(`${CATEGORI_API}/findAll`, {
+          headers: {
+            'Authorization': `Bearer ${token}` // Add token to the headers
+          }
+        }),
+        axios.get(`${YEAR_API}/findAll`, {
+          headers: {
+            'Authorization': `Bearer ${token}` // Add token to the headers
+          }
+        }),
+        axios.get(`${TYPE_API}/findAll`, {
+          headers: {
+            'Authorization': `Bearer ${token}` // Add token to the headers
+          }
+        })
       ]);
       setCategoryOptions(categoryRes.data);
       setYearOptions(yearRes.data);
@@ -111,22 +123,21 @@ const Document = () => {
 
   const fetchDocuments = async () => {
     try {
-      const response = await axios.get(`${DOCUMENTHEADER_API}/findAll`);
+      const response = await axios.get(`${DOCUMENTHEADER_API}/findAll`, {
+        headers: {
+          'Authorization': `Bearer ${token}` // Add token to the headers
+        }
+      });
       setDocuments(response.data);
     } catch (error) {
       console.error('Error fetching documents:', error);
     }
   };
 
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-
-  // const handleFileChange = (e) => {
-  //   setFormData({ ...formData, file: e.target.files[0] });
-  // };
 
   const handleAddDocument = async () => {
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
@@ -149,6 +160,7 @@ const Document = () => {
       try {
         await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
           headers: {
+            'Authorization': `Bearer ${token}`, // Add token to the headers
             'Content-Type': 'application/json'
           }
         });
@@ -171,8 +183,6 @@ const Document = () => {
   };
 
   const handleSaveEdit = async () => {
-    console.log("Saving edited document with data:", formData); // Debugging statement
-
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
       const updatedDocument = {
         ...documents[editingIndex],
@@ -187,9 +197,11 @@ const Document = () => {
       };
 
       try {
-        await axios.put(`${DOCUMENTHEADER_API}/update/${updatedDocument.id}`, updatedDocument);
-        console.log("Document updated successfully");
-        // Refetch documents after updating
+        await axios.put(`${DOCUMENTHEADER_API}/update/${updatedDocument.id}`, updatedDocument, {
+          headers: {
+            'Authorization': `Bearer ${token}` // Add token to the headers
+          }
+        });
         fetchDocuments();
         setFormData({
           title: '',
@@ -223,7 +235,11 @@ const Document = () => {
 
   const handleDeleteDocument = async (id) => {
     try {
-      await axios.delete(`${DOCUMENTHEADER_API}/delete/${id}`);
+      await axios.delete(`${DOCUMENTHEADER_API}/delete/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}` // Add token to the headers
+        }
+      });
       fetchDocuments(); // Refresh the document list
     } catch (error) {
       console.error('Error deleting document:', error);
@@ -231,20 +247,29 @@ const Document = () => {
   };
 
   const handleViewClick = (file) => {
-    const url = URL.createObjectURL(file);
-    window.open(url, '_blank');
+    const fileUrl = URL.createObjectURL(file);
+    window.open(fileUrl, '_blank');
+  };
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1); // Reset to the first page when items per page change
   };
 
   const filteredDocuments = documents.filter(doc =>
-    Object.values(doc).some(value =>
-      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    doc.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalItems = filteredDocuments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  
 
+  
   return (
     <div className="p-1">
       <h1 className="text-xl mb-4 font-semibold">DOCUMENT MANAGEMENT</h1>
@@ -524,6 +549,7 @@ const Document = () => {
         )}
       </div>
     </div>
+
   );
 };
 

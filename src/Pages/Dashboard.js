@@ -2,8 +2,30 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Sidebar from '../Components/Sidebar';
 import Header from '../Components/Header';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { CalendarDaysIcon, ComputerDesktopIcon, DocumentArrowDownIcon, DocumentChartBarIcon, DocumentMagnifyingGlassIcon, KeyIcon, ServerStackIcon, ShoppingCartIcon, UserCircleIcon, UsersIcon } from '@heroicons/react/24/solid';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+} from 'recharts';
+import {
+  CalendarDaysIcon,
+  ComputerDesktopIcon,
+  DocumentArrowDownIcon,
+  DocumentChartBarIcon,
+  DocumentMagnifyingGlassIcon,
+  KeyIcon,
+  ServerStackIcon,
+  ShoppingCartIcon,
+  UserCircleIcon,
+  UsersIcon,
+} from '@heroicons/react/24/solid';
 
 function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -17,12 +39,20 @@ function Dashboard() {
     totalRoles: 0,
     documentType: 0,
     annualYear: 0,
-    totalCategories: 0
+    totalCategories: 0,
   });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        // Retrieve token from local storage
+        const token = localStorage.getItem('tokenKey'); // Make sure 'tokenKey' matches the key used in Sidebar
+        if (token) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        } else {
+          console.error('Token not found in localStorage');
+        }
+
         const response = await axios.get('http://localhost:8080/Dashboard/GetAllCountsForDashBoard');
         setStats(response.data);
       } catch (error) {
@@ -65,11 +95,11 @@ function Dashboard() {
   }
 
   return (
-    <div className='flex flex-row bg-neutral-100 h-screen w-screen overflow-hidden'>
+    <div className="flex flex-row bg-neutral-100 h-screen w-screen overflow-hidden">
       {sidebarOpen && <Sidebar />}
-      <div className='flex flex-col flex-1'>
+      <div className="flex flex-col flex-1">
         <Header toggleSidebar={toggleSidebar} />
-        <div className='flex-1 p-4 min-h-0 overflow-auto'>
+        <div className="flex-1 p-4 min-h-0 overflow-auto">
           <h2 className="text-xl mb-4 font-semibold">DASHBOARD</h2>
 
           <div className="grid grid-cols-5 gap-4 mb-6">
@@ -85,9 +115,9 @@ function Dashboard() {
             <StatBlock title="Total Categories" value={stats.totalCategories} Icon={ShoppingCartIcon} />
           </div>
 
-          <div className="flex space-x-4">
-            <div className="w-1/2 bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Monthly Document Activity</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-2">Monthly Data</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={barChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -100,8 +130,9 @@ function Dashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="w-1/2 bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Document Traffic Trends</h3>
+
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-2">Page Views</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={lineChartData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -109,7 +140,7 @@ function Dashboard() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="pv" stroke="#8884d8" activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="pv" stroke="#8884d8" />
                   <Line type="monotone" dataKey="uv" stroke="#82ca9d" />
                 </LineChart>
               </ResponsiveContainer>

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { EyeIcon, UserIcon, LockClosedIcon, ArrowPathIcon, EyeSlashIcon } from '@heroicons/react/24/solid';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { LOGIN_API, LOGIN_API_verify } from '../API/apiConfig';
+
 
 const LoginPage = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +63,7 @@ const LoginPage = () => {
         e.preventDefault(); // Prevent paste action
     };
 
-    const requestOtp = () => {
+    const requestOtp = async () => {
         if (!formData.username || !formData.password || !formData.captcha) {
             setAlertMessage('Please fill in all fields before requesting OTP.');
             return;
@@ -72,36 +75,64 @@ const LoginPage = () => {
             return;
         }
 
-        console.log('Requesting OTP for', formData.username);
-        setIsOtpRequested(true);
-        setAlertMessage('OTP has been sent to your registered email.');
+        try {
+            const response = await axios.post(LOGIN_API, {
+                email: formData.username,
+                password: formData.password
+            });
+
+            if (response.status === 200) {
+                setIsOtpRequested(true);
+                setAlertMessage('OTP has been sent to your email.');
+            }
+        } catch (error) {
+            if (error.response && error.response.status === 401) {
+                setAlertMessage('Invalid username or password.');
+            } else {
+                setAlertMessage('An error occurred. Please try again.');
+            }
+        }
     };
 
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
+
         if (isOtpRequested) {
             if (!otp) {
                 setAlertMessage('Please enter OTP to proceed.');
                 return;
             }
-            console.log('Logging in with OTP:', otp);
-            setAlertMessage('Login successful!');
+
+            try {
+                const response = await axios.post(LOGIN_API_verify, {
+                    email: formData.username,
+                    otp: otp
+                });
+
+                if (response.status === 200) {
+                    const tokenKey = 'tokenKey';
+
+                    // Store token and email in local storage
+                    localStorage.setItem(tokenKey, response.data.token);
+                    localStorage.setItem('email', formData.username);
+
+                    setAlertMessage('Login successful!');
+                    navigate('/'); // Redirect to the home page or dashboard
+                }
+            } catch (error) {
+                if (error.response && error.response.status === 401) {
+                    setAlertMessage('Invalid OTP.');
+                } else {
+                    setAlertMessage('An error occurred. Please try again.');
+                }
+            }
         } else {
             if (formData.captcha !== captcha) {
                 setAlertMessage('Captcha did not match.');
+                handleRefresh(); // Refresh the captcha in case of error
                 return;
             }
-            console.log('Logging in with', formData);
-            setAlertMessage('Login successful!');
         }
-        setFormData({
-            username: '',
-            password: '',
-            captcha: ''
-        });
-        setOtp('');
-        setIsOtpRequested(false);
-        navigate('/');
     };
 
     const togglePasswordVisibility = () => {

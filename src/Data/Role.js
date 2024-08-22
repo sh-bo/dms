@@ -7,6 +7,8 @@ import {
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
 
+const tokenKey = 'tokenKey'; // Updated token key
+
 const Role = () => {
   const [roles, setRoles] = useState([]);
   const [formData, setFormData] = useState({ role: '' });
@@ -18,10 +20,12 @@ const Role = () => {
   const [roleToToggle, setRoleToToggle] = useState(null);
 
   useEffect(() => {
-    // Fetch roles from the server
     const fetchRoles = async () => {
       try {
-        const response = await axios.get(`${ROLE_API}/findAll`);
+        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
+        const response = await axios.get(`${ROLE_API}/findAll`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setRoles(response.data);
       } catch (error) {
         console.error('Error fetching roles:', error);
@@ -36,14 +40,17 @@ const Role = () => {
   };
 
   const handleAddRole = async () => {
-    if (Object.values(formData).every(value => value)) {
+    if (formData.role) {
       const newRole = {
         role: formData.role,
         isActive: 1 // Use 1 to represent true
       };
 
       try {
-        const response = await axios.post(`${ROLE_API}/save`, newRole);
+        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
+        const response = await axios.post(`${ROLE_API}/save`, newRole, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         setRoles([...roles, response.data]);
         setFormData({ role: '' });
       } catch (error) {
@@ -65,7 +72,10 @@ const Role = () => {
           role: formData.role,
           updatedOn: new Date().toISOString(),
         };
-        const response = await axios.put(`${ROLE_API}/update/${updatedRole.id}`, updatedRole);
+        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
+        const response = await axios.put(`${ROLE_API}/update/${updatedRole.id}`, updatedRole, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         const updatedRoles = roles.map((role, index) =>
           index === editingIndex ? response.data : role
         );
@@ -80,7 +90,10 @@ const Role = () => {
 
   const handleDeleteRole = async (index) => {
     try {
-      await axios.delete(`${ROLE_API}/delete/${roles[index].id}`);
+      const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
+      await axios.delete(`${ROLE_API}/delete/${roles[index].id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const updatedRoles = roles.filter((_, i) => i !== index);
       setRoles(updatedRoles);
     } catch (error) {
@@ -102,13 +115,15 @@ const Role = () => {
           updatedOn: new Date().toISOString(),
         };
 
-        console.log('Sending payload:', updatedRole); // Debug log
-
+        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
         const response = await axios.put(
-          `${ROLE_API}/updatestatus/${updatedRole.id}`, 
+          `${ROLE_API}/updatestatus/${updatedRole.id}`,
           updatedRole,
           {
-            headers: { 'Content-Type': 'application/json' }
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`
+            }
           }
         );
 
@@ -209,8 +224,8 @@ const Role = () => {
                 <tr key={role.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td className="border p-2">{role.role}</td>
-                  <td className="border p-2">{role.createdOn}</td>
-                  <td className="border p-2">{role.updatedOn}</td>
+                  <td className="border p-2">{new Date(role.createdOn).toLocaleDateString()}</td>
+                  <td className="border p-2">{new Date(role.updatedOn).toLocaleDateString()}</td>
                   <td className="border p-2">{role.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditRole(index)}>
@@ -240,50 +255,52 @@ const Role = () => {
           </table>
         </div>
 
+
         <div className="flex justify-between items-center mt-4">
           <div>
-            <span className="text-sm text-gray-700">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
-            </span>
-          </div>
-          <div className="flex items-center">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="bg-slate-200 px-3 py-1 rounded mr-3"
-            >
-              <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
-              Previous
-            </button>
-            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="bg-slate-200 px-3 py-1 rounded ml-3"
-            >
-              Next
-              <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
-            </button>
+            {totalPages > 1 && (
+              <>
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  className="bg-blue-500 text-white px-3 py-1 rounded-lg disabled:opacity-50"
+                >
+                  <ArrowLeftIcon className="h-6 w-6" />
+                </button>
+                <span className="mx-3">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  className="bg-blue-500 text-white px-3 py-1 rounded-lg disabled:opacity-50"
+                >
+                  <ArrowRightIcon className="h-6 w-6" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {modalVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
-          <div className="bg-white p-4 rounded-lg shadow-lg">
-            <p>Are you sure you want to change the status of this role?</p>
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={confirmToggleActiveStatus}
-                className="bg-green-500 text-white rounded-lg p-2"
-              >
-                Confirm
-              </button>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <p className="text-lg mb-4">
+              Are you sure you want to {roleToToggle?.isActive === 1 ? 'deactivate' : 'activate'} this role?
+            </p>
+            <div className="flex justify-end">
               <button
                 onClick={() => setModalVisible(false)}
-                className="bg-red-500 text-white rounded-lg p-2 ml-2"
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2"
               >
                 Cancel
+              </button>
+              <button
+                onClick={confirmToggleActiveStatus}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+                Confirm
               </button>
             </div>
           </div>

@@ -13,13 +13,18 @@ const Approve = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [documentToApprove, setDocumentToApprove] = useState(null);
 
+  const tokenKey = 'tokenKey'; // Key used to retrieve the token from local storage
+
   useEffect(() => {
     fetchDocuments();
   }, []);
 
   const fetchDocuments = async () => {
     try {
-      const response = await axios.get(`${DOCUMENTHEADER_API}/getAllPendingStatus`);
+      const token = localStorage.getItem(tokenKey);
+      const response = await axios.get(`${DOCUMENTHEADER_API}/getAllPendingStatus`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setDocuments(response.data);
     } catch (error) {
       console.error('Error fetching documents:', error);
@@ -28,7 +33,10 @@ const Approve = () => {
 
   const handleUpdateDocumentStatus = async (id, approved) => {
     try {
-      await axios.put(`${DOCUMENTHEADER_API}/updatestatus/${id}`, { approved });
+      const token = localStorage.getItem(tokenKey);
+      await axios.put(`${DOCUMENTHEADER_API}/updatestatus/${id}`, { approved }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       fetchDocuments(); // Refresh the document list
       setIsConfirmModalOpen(false); // Close the confirmation modal
     } catch (error) {
@@ -45,6 +53,18 @@ const Approve = () => {
   const totalItems = filteredDocuments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   return (
     <div className="p-4">
@@ -77,61 +97,62 @@ const Approve = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border">
-            <thead>
-              <tr className="bg-slate-100">
-                <th className="border p-2 text-left">SR.</th>
-                <th className="border p-2 text-left">Title</th>
-                <th className="border p-2 text-left">File No</th>
-                <th className="border p-2 text-left">Subject</th>
-                <th className="border p-2 text-left">Version</th>
-                <th className="border p-2 text-left">Created On</th>
-                <th className="border p-2 text-left">Updated On</th>
-                <th className="border p-2 text-left">Category</th>
-                <th className="border p-2 text-left">Year</th>
-                <th className="border p-2 text-left">Type</th>
-                <th className="border p-2 text-left">EID</th>
-                <th className="border p-2 text-left">Department</th>
-                <th className="border p-2 text-left">Branch</th>
-                <th className="border p-2 text-left">Approval</th>
-                <th className="border p-2 text-left">Approve</th>
-                <th className="border p-2 text-left">View</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedDocuments.map((doc, index) => (
-                <tr key={doc.id}>
-                  <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                  <td className="border p-2">{doc.title}</td>
-                  <td className="border p-2">{doc.fileNo}</td>
-                  <td className="border p-2">{doc.subject}</td>
-                  <td className="border p-2">{doc.version}</td>
-                  <td className="border p-2">{new Date(doc.createdOn).toLocaleDateString()}</td>
-                  <td className="border p-2">{new Date(doc.updatedOn).toLocaleDateString()}</td>
-                  <td className="border p-2">{doc.category ? doc.category.name : ''}</td>
-                  <td className="border p-2">{doc.year ? doc.year.name : ''}</td>
-                  <td className="border p-2">{doc.type ? doc.type.name : ''}</td>
-                  <td className="border p-2">{doc.employee ? doc.employee.id : 'N/A'}</td>
-                  <td className="border p-2">{doc.department ? doc.department.name : ''}</td>
-                  <td className="border p-2">{doc.branch ? doc.branch.name : ''}</td>
-                  <td className="border p-2">{doc.approved ? 'Approved' : 'Not Approved'}</td>
-                  <td className="border p-2">
-                    <button onClick={() => { setDocumentToApprove(doc); setIsConfirmModalOpen(true); }}>
-                      <CheckCircleIcon className="h-6 w-6 text-white bg-green-500 rounded-xl p-0.5" />
-                    </button>
-                  </td>
-                  <td className="border p-2">
-                    <button onClick={() => { setSelectedDocument(doc); setIsModalOpen(true); }}>
-                      <EyeIcon className="h-6 w-6 bg-yellow-500 rounded-xl p-1 text-white" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+  <table className="w-full border-collapse border">
+    <thead>
+      <tr className="bg-slate-100">
+        <th className="border p-2 text-left">SR.</th>
+        <th className="border p-2 text-left">Title</th>
+        <th className="border p-2 text-left">File No</th>
+        <th className="border p-2 text-left">Subject</th>
+        <th className="border p-2 text-left">Version</th>
+        <th className="border p-2 text-left">Created On</th>
+        <th className="border p-2 text-left">Updated On</th>
+        <th className="border p-2 text-left">Category</th>
+        <th className="border p-2 text-left">Year</th>
+        <th className="border p-2 text-left">Type</th>
+        <th className="border p-2 text-left">EID</th>
+        <th className="border p-2 text-left">Department</th>
+        <th className="border p-2 text-left">Branch</th>
+        <th className="border p-2 text-left">Approval</th>
+        <th className="border p-2 text-left">Approve</th>
+        <th className="border p-2 text-left">View</th>
+      </tr>
+    </thead>
+    <tbody>
+      {paginatedDocuments.map((doc, index) => (
+        <tr key={doc.id} className="even:bg-gray-50">
+          <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+          <td className="border p-2">{doc.title}</td>
+          <td className="border p-2">{doc.fileNo}</td>
+          <td className="border p-2">{doc.subject}</td>
+          <td className="border p-2">{doc.version}</td>
+          <td className="border p-2">{new Date(doc.createdOn).toLocaleDateString()}</td>
+          <td className="border p-2">{new Date(doc.updatedOn).toLocaleDateString()}</td>
+          <td className="border p-2">{doc.category ? doc.category.name : ''}</td>
+          <td className="border p-2">{doc.year ? doc.year.name : ''}</td>
+          <td className="border p-2">{doc.type ? doc.type.name : ''}</td>
+          <td className="border p-2">{doc.employee ? doc.employee.id : 'N/A'}</td>
+          <td className="border p-2">{doc.department ? doc.department.name : ''}</td>
+          <td className="border p-2">{doc.branch ? doc.branch.name : ''}</td>
+          <td className="border p-2">{doc.approved ? 'Approved' : 'Not Approved'}</td>
+          <td className="border p-2">
+            <button onClick={() => { setDocumentToApprove(doc); setIsConfirmModalOpen(true); }}>
+              <CheckCircleIcon className="h-6 w-6 text-white bg-green-500 rounded-full p-1" />
+            </button>
+          </td>
+          <td className="border p-2">
+            <button onClick={() => { setSelectedDocument(doc); setIsModalOpen(true); }}>
+              <EyeIcon className="h-6 w-6 text-white bg-yellow-500 rounded-full p-1" />
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
-        <div className="flex justify-between items-center mt-4">
+
+<div className="flex justify-between items-center mt-4">
           <div>
             <span className="text-sm text-gray-700">
               Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
@@ -146,7 +167,9 @@ const Approve = () => {
               <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
               Previous
             </button>
-            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
@@ -157,7 +180,6 @@ const Approve = () => {
             </button>
           </div>
         </div>
-
         {isModalOpen && selectedDocument && (
           <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 p-4">
             <div className="bg-white p-6 rounded-lg max-w-lg w-full">
@@ -215,5 +237,6 @@ const Approve = () => {
     </div>
   );
 };
+
 
 export default Approve;

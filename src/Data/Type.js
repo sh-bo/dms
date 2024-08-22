@@ -3,24 +3,27 @@ import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleI
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-
+const tokenKey = 'tokenKey'; // Correct token key name
 
 const Type = () => {
   const [types, setTypes] = useState([]);
-  const [formData, setFormData] = useState({ name: '', });
+  const [formData, setFormData] = useState({ name: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    // Fetch types from the server
     const fetchTypes = async () => {
       try {
-        const response = await axios.get(`${TYPE_API}/findAll`);
+        const response = await axios.get(`${TYPE_API}/findAll`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+          },
+        });
         setTypes(response.data);
       } catch (error) {
-        console.error('Error fetching typess:', error);
+        console.error('Error fetching types:', error);
       }
     };
     fetchTypes();
@@ -32,21 +35,20 @@ const Type = () => {
   };
 
   const handleAddType = async () => {
-    if (formData.name) { // Ensure 'name' field is not empty
-      const newType = {
-        name: formData.name, // Use 'name' field here
-      };
-
+    if (formData.name.trim()) {
       try {
-        const response = await axios.post(`${TYPE_API}/save`, newType);
+        const response = await axios.post(`${TYPE_API}/save`, formData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+          },
+        });
         setTypes([...types, response.data]);
-        setFormData({ name: '' }); // Reset the form field
+        setFormData({ name: '' });
       } catch (error) {
         console.error('Error adding type:', error.response ? error.response.data : error.message);
       }
     }
   };
-
 
   const handleEditType = (index) => {
     setEditingIndex(index);
@@ -54,19 +56,23 @@ const Type = () => {
   };
 
   const handleSaveEdit = async () => {
-    if (formData.name) { // Check 'name' instead of 'type'
+    if (formData.name.trim()) {
       try {
         const updatedType = {
           ...types[editingIndex],
-          name: formData.name, // Use 'name' field here
+          name: formData.name,
           updatedOn: new Date().toISOString(),
         };
-        const response = await axios.put(`${TYPE_API}/update/${updatedType.id}`, updatedType);
+        const response = await axios.put(`${TYPE_API}/update/${updatedType.id}`, updatedType, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+          },
+        });
         const updatedTypes = types.map((type, index) =>
           index === editingIndex ? response.data : type
         );
         setTypes(updatedTypes);
-        setFormData({ name: '' }); // Reset the form field
+        setFormData({ name: '' });
         setEditingIndex(null);
       } catch (error) {
         console.error('Error updating type:', error.response ? error.response.data : error.message);
@@ -74,10 +80,13 @@ const Type = () => {
     }
   };
 
-
   const handleDeleteType = async (index) => {
     try {
-      await axios.delete(`${TYPE_API}/delete/${types[index].id}`);
+      await axios.delete(`${TYPE_API}/delete/${types[index].id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+        },
+      });
       const updatedTypes = types.filter((_, i) => i !== index);
       setTypes(updatedTypes);
     } catch (error) {
