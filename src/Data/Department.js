@@ -27,6 +27,8 @@ const Department = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [toggleDepartment, setToggleDepartment] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [departmentToDelete, setDepartmentToDelete] = useState(null);
 
   // Retrieve token from localStorage
   const token = localStorage.getItem('tokenKey');
@@ -64,7 +66,16 @@ const Department = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  
+    // Allow only letters and spaces
+    const regex = /^[A-Za-z\s]*$/;
+  
+    if (regex.test(value) || value === "") {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
   };
 
   const handleBranchChange = (e) => {
@@ -90,8 +101,10 @@ const Department = () => {
         });
         setDepartments([...departments, response.data]);
         setFormData({ name: '', branch: null, isActive: true });
+        alert('Department added successfully!');
       } catch (error) {
         console.error('Error adding department:', error);
+        alert('Failed to adding the Department. Please try again.'); 
       }
     } else {
       console.error('Form data is incomplete');
@@ -123,25 +136,35 @@ const Department = () => {
         setDepartments(updatedDepartments);
         setFormData({ name: '', branch: null, isActive: true });
         setEditingIndex(null);
+        alert('Department updated successfully!');
       } catch (error) {
         console.error('Error updating department:', error);
+        alert('Failed to updating the Department. Please try again.'); 
       }
     } else {
       console.error('Form data is incomplete');
     }
   };
 
-  const handleDeleteDepartment = async (index) => {
+  const handleDeleteDepartment = (index) => {
+    setDepartmentToDelete(departments[index]); // Set the department to delete
+    setDeleteModalVisible(true); // Show the delete modal
+  };
+  const handleDeleteConfirmed = async (id) => {
     try {
-      await axios.delete(`${DEPAETMENT_API}/delete/${departments[index].id}`, {
+      await axios.delete(`${DEPAETMENT_API}/delete/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
-      const updatedDepartments = departments.filter((_, i) => i !== index);
+      const updatedDepartments = departments.filter(department => department.id !== id);
       setDepartments(updatedDepartments);
+      setDeleteModalVisible(false); // Close the delete modal
+      setDepartmentToDelete(null); // Clear the department to delete
+      alert('Department deleted successfully!');
     } catch (error) {
       console.error('Error deleting department:', error);
+      alert('Failed to deleting the Department. Please try again.'); 
     }
   };
 
@@ -174,8 +197,10 @@ const Department = () => {
         setDepartments(updatedDepartments);
         setModalVisible(false);
         setToggleDepartment(null);
+        alert('Status Changed successfully!');
       } catch (error) {
         console.error('Error toggling department status:', error);
+        alert('Failed to changing the Status. Please try again.'); 
       }
     } else {
       console.error('No department selected for status toggle');
@@ -226,7 +251,7 @@ const Department = () => {
               </button>
             ) : (
               <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <CheckCircleIcon className="h-5 w-5 mr-1" /> Save
+                <CheckCircleIcon className="h-5 w-5 mr-1" /> Update
               </button>
             )}
           </div>
@@ -323,16 +348,18 @@ const Department = () => {
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="bg-slate-200 px-3 py-1 rounded mr-3 disabled:opacity-50"
+              className="bg-slate-200 px-3 py-1 rounded mr-3"
             >
               <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
               Previous
             </button>
-            <span className="text-blue-500 font-semibold">Page {currentPage} of {totalPages}</span>
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="bg-slate-200 px-3 py-1 rounded ml-3 disabled:opacity-50"
+              className="bg-slate-200 px-3 py-1 rounded ml-3"
             >
               Next
               <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
@@ -340,6 +367,29 @@ const Department = () => {
           </div>
         </div>
       </div>
+      
+      {deleteModalVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
+            <p>Are you sure you want to delete the department <strong>{departmentToDelete?.name}</strong>?</p>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setDeleteModalVisible(false)}
+                className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteConfirmed(departmentToDelete.id)} // Call a function to delete the department
+                className="bg-red-500 text-white rounded-lg px-4 py-2"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal for Confirming Status Change */}
       {modalVisible && (

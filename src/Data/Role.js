@@ -18,6 +18,8 @@ const Role = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [roleToToggle, setRoleToToggle] = useState(null);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState(null);
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -36,7 +38,16 @@ const Role = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ [name]: value });
+  
+    // Allow only letters and spaces
+    const regex = /^[A-Za-z\s]*$/;
+  
+    if (regex.test(value) || value === "") {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
   };
 
   const handleAddRole = async () => {
@@ -53,8 +64,10 @@ const Role = () => {
         });
         setRoles([...roles, response.data]);
         setFormData({ role: '' });
+        alert('Role added successfully!');
       } catch (error) {
         console.error('Error adding role:', error);
+        alert('Failed to adding the role. Please try again.'); 
       }
     }
   };
@@ -82,24 +95,42 @@ const Role = () => {
         setRoles(updatedRoles);
         setFormData({ role: '' });
         setEditingIndex(null);
+        alert('Role Updated successfully!');
       } catch (error) {
         console.error('Error updating role:', error.response ? error.response.data : error.message);
+        alert('Failed to updating the role. Please try again.'); 
       }
     }
   };
 
-  const handleDeleteRole = async (index) => {
-    try {
-      const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
-      await axios.delete(`${ROLE_API}/delete/${roles[index].id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const updatedRoles = roles.filter((_, i) => i !== index);
-      setRoles(updatedRoles);
-    } catch (error) {
-      console.error('Error deleting role:', error.response ? error.response.data : error.message);
+  const handleDeleteRole = (index) => {
+    setRoleToDelete(roles[index]); // Set the role to delete
+    setDeleteModalVisible(true); // Show the delete modal
+  };
+  
+  const handleDeleteConfirmed = async () => {
+    if (roleToDelete) {
+      try {
+        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
+        await axios.delete(`${ROLE_API}/delete/${roleToDelete.id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        const updatedRoles = roles.filter(role => role.id !== roleToDelete.id);
+        setRoles(updatedRoles);
+        setDeleteModalVisible(false); // Close the delete modal
+        setRoleToDelete(null); // Clear the role to delete
+        alert('Role deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting role:', error.response ? error.response.data : error.message);
+        alert('Failed to deleting the role. Please try again.'); 
+      }
+    } else {
+      console.error('No role selected for deletion');
     }
   };
+  
 
   const handleToggleActiveStatus = (role) => {
     setRoleToToggle(role);
@@ -117,13 +148,13 @@ const Role = () => {
 
         const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
         const response = await axios.put(
-          `${ROLE_API}/updatestatus/${updatedRole.id}`,
+          `${ROLE_API}/update/${updatedRole.id}`, // Update API endpoint
           updatedRole,
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            }
+              Authorization: `Bearer ${token}`,
+            },
           }
         );
 
@@ -133,11 +164,13 @@ const Role = () => {
         setRoles(updatedRoles);
         setModalVisible(false);
         setRoleToToggle(null);
+        alert('Status Changed successfully!');
       } catch (error) {
         console.error('Error toggling role status:', error.response ? error.response.data : error.message);
+        alert('Failed to changing the status. Please try again.'); 
       }
     } else {
-      console.error('roleToToggle is not defined or null');
+      console.error('No role selected for status toggle');
     }
   };
 
@@ -173,7 +206,7 @@ const Role = () => {
               </button>
             ) : (
               <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <CheckCircleIcon className="h-5 w-5 mr-1" /> Save
+                <CheckCircleIcon className="h-5 w-5 mr-1" /> Update
               </button>
             )}
           </div>
@@ -258,47 +291,72 @@ const Role = () => {
 
         <div className="flex justify-between items-center mt-4">
           <div>
-            {totalPages > 1 && (
-              <>
-                <button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  className="bg-blue-500 text-white px-3 py-1 rounded-lg disabled:opacity-50"
-                >
-                  <ArrowLeftIcon className="h-6 w-6" />
-                </button>
-                <span className="mx-3">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  className="bg-blue-500 text-white px-3 py-1 rounded-lg disabled:opacity-50"
-                >
-                  <ArrowRightIcon className="h-6 w-6" />
-                </button>
-              </>
-            )}
+            <span className="text-sm text-gray-700">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
+            </span>
+          </div>
+          <div className="flex items-center">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="bg-slate-200 px-3 py-1 rounded mr-3"
+            >
+              <ArrowLeftIcon className="inline h-4 w-4 mr-2 mb-1" />
+              Previous
+            </button>
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="bg-slate-200 px-3 py-1 rounded ml-3"
+            >
+              Next
+              <ArrowRightIcon className="inline h-4 w-4 ml-2 mb-1" />
+            </button>
           </div>
         </div>
       </div>
 
-      {modalVisible && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+      {deleteModalVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <p className="text-lg mb-4">
-              Are you sure you want to {roleToToggle?.isActive === 1 ? 'deactivate' : 'activate'} this role?
-            </p>
-            <div className="flex justify-end">
+            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
+            <p>Are you sure you want to delete the role <strong>{roleToDelete?.role}</strong>?</p>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setDeleteModalVisible(false)}
+                className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed} // Call the function to delete the role
+                className="bg-red-500 text-white rounded-lg px-4 py-2"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Confirm Status Change</h2>
+            <p>Are you sure you want to {roleToToggle?.isActive === 1 ? 'deactivate' : 'activate'} the role <strong>{roleToToggle.role}</strong>?</p>
+            <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setModalVisible(false)}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg mr-2"
+                className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmToggleActiveStatus}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                className="bg-blue-500 text-white rounded-lg px-4 py-2"
               >
                 Confirm
               </button>

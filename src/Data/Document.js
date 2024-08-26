@@ -51,8 +51,8 @@ const Document = () => {
     }
 
     const formData = new FormData();
-    selectedFiles.forEach(file => {
-      formData.append('files', file);
+    Array.from(selectedFiles).forEach(file => {
+      formData.append('images', file); // Change 'images' to 'files' if needed
     });
 
     try {
@@ -60,14 +60,14 @@ const Document = () => {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${token}` // Add token to the headers
+          'Authorization': `Bearer ${token}` // Ensure the token is valid
         }
       });
 
       if (response.ok) {
         const result = await response.text();
         alert(`Files uploaded successfully: ${result}`);
-        setUploadedFileNames([...uploadedFileNames, ...selectedFiles.map(file => file.name)]);
+        setUploadedFileNames([...uploadedFileNames, ...Array.from(selectedFiles).map(file => file.name)]);
         setSelectedFiles([]);
       } else {
         const errorText = await response.text();
@@ -78,7 +78,8 @@ const Document = () => {
       console.error('Error uploading files:', error);
       alert('Error uploading files');
     }
-  };
+};
+
 
   const handleDiscard = (index) => {
     const updatedFileNames = uploadedFileNames.filter((_, i) => i !== index);
@@ -136,9 +137,17 @@ const Document = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  
+    // Allow only letters and spaces
+    const regex = /^[A-Za-z\s]*$/;
+  
+    if (regex.test(value) || value === "") {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
   };
-
   const handleAddDocument = async () => {
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
       const newDocument = {
@@ -174,8 +183,10 @@ const Document = () => {
           file: null
         });
         setCurrentPage(1); // Optionally, reset pagination
+        alert('Document added successfully!');
       } catch (error) {
         console.error('Error adding document:', error.response ? error.response.data : error.message);
+        alert('Failed to adding the Document. Please try again.'); 
       }
     } else {
       console.error('Form data is incomplete:', formData); // Debugging statement
@@ -212,8 +223,10 @@ const Document = () => {
           file: null
         });
         setEditingIndex(null);
+        alert('Document updated successfully!');
       } catch (error) {
         console.error('Error saving document:', error);
+        alert('Failed to updating the Document. Please try again.'); 
       }
     } else {
       console.error('Form data is incomplete:', formData);
@@ -241,6 +254,7 @@ const Document = () => {
         }
       });
       fetchDocuments(); // Refresh the document list
+      alert('Document delated successfully!');
     } catch (error) {
       console.error('Error deleting document:', error);
     }
@@ -267,9 +281,9 @@ const Document = () => {
   const totalItems = filteredDocuments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-  
 
-  
+
+
   return (
     <div className="p-1">
       <h1 className="text-xl mb-4 font-semibold">DOCUMENT MANAGEMENT</h1>
@@ -327,10 +341,7 @@ const Document = () => {
             </select>
             <div>
               <div className='flex'>
-                <button onClick={handleUpload}
-                  className="bg-rose-900 mr-2 text-white rounded-xl p-2">
-                  Upload
-                </button>
+
                 <input
                   type="file"
                   accept=".pdf"
@@ -338,6 +349,10 @@ const Document = () => {
                   onChange={handleFileChange}
                   className="p-2 border rounded-md outline-none w-full"
                 />
+                <button onClick={handleUpload}
+                  className="bg-rose-900 ml-2 text-white rounded-xl p-2">
+                  Upload
+                </button>
 
               </div>
             </div>

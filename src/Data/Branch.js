@@ -9,9 +9,10 @@ import {
   TrashIcon
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
+import { BRANCH_API } from '../API/apiConfig';
+
 
 const tokenKey = 'tokenKey'; // Your token key in localStorage
-const API_URL = 'http://localhost:8080/branchmaster';
 
 const Branch = () => {
   const [branches, setBranches] = useState([]);
@@ -25,6 +26,8 @@ const Branch = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [branchToDelete, setBranchToDelete] = useState(null);
 
   useEffect(() => {
     fetchBranches();
@@ -33,7 +36,7 @@ const Branch = () => {
   const fetchBranches = async () => {
     try {
       const token = localStorage.getItem(tokenKey);
-      const response = await axios.get(`${API_URL}/findAll`, {
+      const response = await axios.get(`${BRANCH_API}/findAll`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -48,7 +51,7 @@ const Branch = () => {
   const fetchBranchById = async (id) => {
     try {
       const token = localStorage.getItem(tokenKey);
-      const response = await axios.get(`${API_URL}/findById/${id}`, {
+      const response = await axios.get(`${BRANCH_API}/findById/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -64,6 +67,19 @@ const Branch = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
+  const handleInputChanges = (e) => {
+    const { name, value } = e.target;
+  
+    // Allow only letters and spaces
+    const regex = /^[A-Za-z\s]*$/;
+  
+    if (regex.test(value) || value === "") {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
+  };
 
   const handleAddBranch = async () => {
     if (formData.name && formData.address) {
@@ -75,7 +91,7 @@ const Branch = () => {
           updatedOn: new Date().toISOString().split('T')[0],
         };
 
-        const response = await axios.post(`${API_URL}/save`, newBranch, {
+        const response = await axios.post(`${BRANCH_API}/save`, newBranch, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -84,9 +100,11 @@ const Branch = () => {
         setBranches([...branches, response.data]);
         setFormData({ name: '', address: '' });
         setError('');
+        alert('Branch added successfully!');
       } catch (error) {
         console.error('Error adding branch:', error);
         setError('Failed to add branch. Please check your authorization.');
+        alert('Failed to adding the Branch. Please try again.'); 
       }
     } else {
       setError('All fields are required.');
@@ -107,7 +125,7 @@ const Branch = () => {
           ...formData,
           updatedOn: new Date().toISOString().split('T')[0],
         };
-        const response = await axios.put(`${API_URL}/update/${formData.id}`, updatedBranch, {
+        const response = await axios.put(`${BRANCH_API}/update/${formData.id}`, updatedBranch, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -119,28 +137,39 @@ const Branch = () => {
         setBranches(updatedBranches);
         setFormData({ id: null, name: '', address: '' });
         setEditingIndex(null);
+        alert('Branch updated successfully!');
       } catch (error) {
         console.error('Error updating branch:', error);
         setError('Failed to update branch. Please check your authorization.');
+        alert('Failed to update the branch. Please try again.'); 
       }
     }
   };
+  const handleDeleteBranch = (index) => {
+    setBranchToDelete(branches[index]); // Set the branch to delete
+    setDeleteModalVisible(true); // Show the delete modal
+  };
 
-  const handleDeleteBranch = async (index) => {
+  const handleDeleteConfirmed = async (id) => {
     try {
-      const token = localStorage.getItem(tokenKey);
-      await axios.delete(`${API_URL}/delete/${branches[index].id}`, {
+      const token = localStorage.getItem(tokenKey); // Get the token here
+      await axios.delete(`${BRANCH_API}/delete/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      const updatedBranches = branches.filter((_, i) => i !== index);
+      const updatedBranches = branches.filter(branch => branch.id !== id);
       setBranches(updatedBranches);
+      setDeleteModalVisible(false); // Close the delete modal
+      setBranchToDelete(null); // Clear the branch to delete
+      alert('Branch Deleted successfully!');
     } catch (error) {
       console.error('Error deleting branch:', error);
       setError('Failed to delete branch. Please check your authorization.');
+      alert('Failed to deleting the branch. Please try again.'); 
     }
   };
+
 
   const filteredBranches = branches.filter(branch =>
     Object.values(branch).some(value =>
@@ -159,11 +188,11 @@ const Branch = () => {
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
           <div className="grid grid-cols-2 gap-4">
             <input
-              type="text"
+              type="String"
               placeholder="Name"
               name="name"
               value={formData.name}
-              onChange={handleInputChange}
+              onChange={handleInputChanges}
               className="p-2 border rounded-md outline-none"
             />
             <input
@@ -182,7 +211,7 @@ const Branch = () => {
               </button>
             ) : (
               <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <CheckCircleIcon className="h-5 w-5 mr-1" /> Save
+                <CheckCircleIcon className="h-5 w-5 mr-1" /> Update
               </button>
             )}
           </div>
@@ -242,7 +271,7 @@ const Branch = () => {
                   </td>
                   <td className="border p-2">
                     <button onClick={() => handleDeleteBranch((currentPage - 1) * itemsPerPage + index)} className="text-red-500">
-                      <TrashIcon className="h-6 w-6 text-white bg-red-400 rounded-xl p-1" />
+                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
                     </button>
                   </td>
                 </tr>
@@ -250,6 +279,30 @@ const Branch = () => {
             </tbody>
           </table>
         </div>
+
+        {deleteModalVisible && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
+              <p>Are you sure you want to delete the branch <strong>{branchToDelete?.name}</strong>?</p>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setDeleteModalVisible(false)}
+                  className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteConfirmed(branchToDelete.id)} // Call the updated function
+                  className="bg-red-500 text-white rounded-lg px-4 py-2"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
 
         <div className="flex justify-between items-center mt-4">
           <div>

@@ -12,24 +12,102 @@ import Categories from './Pages/Categories';
 import Documents from './Pages/Documents';
 import Approves from './Pages/Approves';
 import LoginPage from './Pages/LoginPage';
+import PrivateRoute from './Components/PrivateRoute';
 
 function App() {
   return (
     <BrowserRouter>
       <div>
         <Routes>
-          <Route path="/" element={<Dashboard />}/>
-          <Route path="/inbox" element={<Inbox />}/>
-          <Route path="/users" element={<Users />}/>
-          <Route path="/create-branch" element={<Branches />}/>
-          <Route path="/create-department" element={<Departments />}/>
-          <Route path="/create-role" element={<Roles />}/>
-          <Route path="/create-type" element={<Types />}/>
-          <Route path="/create-year" element={<Years />}/>
-          <Route path="/create-category" element={<Categories />}/>
-          <Route path="/all-documents" element={<Documents />}/>
-          <Route path="/approve-documents" element={<Approves />}/>
-          <Route path="/auth" element={<LoginPage />}/>
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/inbox"
+            element={
+              <PrivateRoute>
+                <Inbox />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <PrivateRoute>
+                <Users />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-branch"
+            element={
+              <PrivateRoute>
+                <Branches />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-department"
+            element={
+              <PrivateRoute>
+                <Departments />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-role"
+            element={
+              <PrivateRoute>
+                <Roles />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-type"
+            element={
+              <PrivateRoute>
+                <Types />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-year"
+            element={
+              <PrivateRoute>
+                <Years />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/create-category"
+            element={
+              <PrivateRoute>
+                <Categories />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/all-documents"
+            element={
+              <PrivateRoute>
+                <Documents />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/approve-documents"
+            element={
+              <PrivateRoute>
+                <Approves />
+              </PrivateRoute>
+            }
+          />
+          <Route path="/auth" element={<LoginPage />} />
         </Routes>
       </div>
     </BrowserRouter>
