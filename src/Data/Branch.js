@@ -1,33 +1,36 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CheckCircleIcon,
+  LockClosedIcon,
+  LockOpenIcon,
   MagnifyingGlassIcon,
   PencilIcon,
   PlusCircleIcon,
   TrashIcon
 } from '@heroicons/react/24/solid';
-import axios from 'axios';
 import { BRANCH_API } from '../API/apiConfig';
-
-
-const tokenKey = 'tokenKey'; // Your token key in localStorage
 
 const Branch = () => {
   const [branches, setBranches] = useState([]);
-  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
-    id: null,
     name: '',
     address: '',
+    isActive: true, // Default to true for active
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [toggleBranch, setToggleBranch] = useState(null);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [branchToDelete, setBranchToDelete] = useState(null);
+
+  // Retrieve token from localStorage
+  const token = localStorage.getItem('tokenKey');
 
   useEffect(() => {
     fetchBranches();
@@ -35,31 +38,14 @@ const Branch = () => {
 
   const fetchBranches = async () => {
     try {
-      const token = localStorage.getItem(tokenKey);
       const response = await axios.get(`${BRANCH_API}/findAll`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
       setBranches(response.data);
     } catch (error) {
       console.error('Error fetching branches:', error);
-      setError('Failed to fetch branches. Please check your authorization.');
-    }
-  };
-
-  const fetchBranchById = async (id) => {
-    try {
-      const token = localStorage.getItem(tokenKey);
-      const response = await axios.get(`${BRANCH_API}/findById/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      setFormData(response.data);
-    } catch (error) {
-      console.error('Error fetching branch by ID:', error);
-      setError('Failed to fetch branch. Please check your authorization.');
     }
   };
 
@@ -67,113 +53,133 @@ const Branch = () => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-  const handleInputChanges = (e) => {
-    const { name, value } = e.target;
-  
-    // Allow only letters and spaces
-    const regex = /^[A-Za-z\s]*$/;
-  
-    if (regex.test(value) || value === "") {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
-    }
-  };
 
   const handleAddBranch = async () => {
     if (formData.name && formData.address) {
       try {
-        const token = localStorage.getItem(tokenKey);
         const newBranch = {
           ...formData,
-          createdOn: new Date().toISOString().split('T')[0],
-          updatedOn: new Date().toISOString().split('T')[0],
+          createdOn: new Date().toISOString(),
+          updatedOn: new Date().toISOString(),
+          isActive: formData.isActive ? 1 : 0,
         };
-
         const response = await axios.post(`${BRANCH_API}/save`, newBranch, {
           headers: {
-            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
         });
-
         setBranches([...branches, response.data]);
-        setFormData({ name: '', address: '' });
-        setError('');
+        setFormData({ name: '', address: '', isActive: true }); // Reset with default isActive true
         alert('Branch added successfully!');
       } catch (error) {
         console.error('Error adding branch:', error);
-        setError('Failed to add branch. Please check your authorization.');
-        alert('Failed to adding the Branch. Please try again.'); 
+        alert('Failed to add the Branch. Please try again.');
       }
     } else {
-      setError('All fields are required.');
+      console.error('Form data is incomplete');
     }
   };
 
-  const handleEditBranch = async (index) => {
+  const handleEditBranch = (index) => {
     setEditingIndex(index);
-    const branchId = branches[index].id;
-    await fetchBranchById(branchId);
+    setFormData(branches[index]);
   };
 
   const handleSaveEdit = async () => {
-    if (Object.values(formData).every(value => value)) {
+    if (formData.name && formData.address) {
       try {
-        const token = localStorage.getItem(tokenKey);
         const updatedBranch = {
           ...formData,
-          updatedOn: new Date().toISOString().split('T')[0],
+          updatedOn: new Date().toISOString(),
+          isActive: formData.isActive ? 1 : 0,
         };
         const response = await axios.put(`${BRANCH_API}/update/${formData.id}`, updatedBranch, {
           headers: {
-            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
         });
-
         const updatedBranches = branches.map((branch, index) =>
           index === editingIndex ? response.data : branch
         );
         setBranches(updatedBranches);
-        setFormData({ id: null, name: '', address: '' });
+        setFormData({ name: '', address: '', isActive: true }); // Reset with default isActive true
         setEditingIndex(null);
         alert('Branch updated successfully!');
       } catch (error) {
         console.error('Error updating branch:', error);
-        setError('Failed to update branch. Please check your authorization.');
-        alert('Failed to update the branch. Please try again.'); 
+        alert('Failed to update the Branch. Please try again.');
       }
+    } else {
+      console.error('Form data is incomplete');
     }
   };
+
   const handleDeleteBranch = (index) => {
-    setBranchToDelete(branches[index]); // Set the branch to delete
-    setDeleteModalVisible(true); // Show the delete modal
+    setBranchToDelete(branches[index]);
+    setDeleteModalVisible(true);
   };
 
   const handleDeleteConfirmed = async (id) => {
     try {
-      const token = localStorage.getItem(tokenKey); // Get the token here
       await axios.delete(`${BRANCH_API}/delete/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`,
         },
       });
       const updatedBranches = branches.filter(branch => branch.id !== id);
       setBranches(updatedBranches);
-      setDeleteModalVisible(false); // Close the delete modal
-      setBranchToDelete(null); // Clear the branch to delete
-      alert('Branch Deleted successfully!');
+      setDeleteModalVisible(false);
+      setBranchToDelete(null);
+      alert('Branch deleted successfully!');
     } catch (error) {
       console.error('Error deleting branch:', error);
-      setError('Failed to delete branch. Please check your authorization.');
-      alert('Failed to deleting the branch. Please try again.'); 
+      alert('Failed to delete the Branch. Please try again.');
     }
   };
 
+  const handleToggleActive = (branch) => {
+    setToggleBranch(branch);
+    setModalVisible(true);
+  };
+
+  const confirmToggleActiveStatus = async () => {
+    if (toggleBranch) {
+      try {
+        const updatedBranch = {
+          ...toggleBranch,
+          isActive: toggleBranch.isActive === 1 ? 0 : 1,
+          updatedOn: new Date().toISOString(),
+        };
+        const response = await axios.put(
+          `${BRANCH_API}/updateStatus/${updatedBranch.id}?isActive=${updatedBranch.isActive}`,
+          null,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+        const updatedBranches = branches.map(branch =>
+          branch.id === updatedBranch.id ? response.data : branch
+        );
+        setBranches(updatedBranches);
+        setModalVisible(false);
+        setToggleBranch(null);
+        alert('Status changed successfully!');
+      } catch (error) {
+        console.error('Error toggling branch status:', error);
+        alert('Failed to change the Status. Please try again.');
+      }
+    } else {
+      console.error('No branch selected for status toggle');
+    }
+  };
 
   const filteredBranches = branches.filter(branch =>
     Object.values(branch).some(value =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -181,18 +187,32 @@ const Branch = () => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const paginatedBranches = filteredBranches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
+  // Function to format date and time in Indian format
+  const formatDateTime = (dateTime) => {
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Kolkata'
+    };
+    return new Date(dateTime).toLocaleString('en-IN', options);
+  };
+
   return (
-    <div className="p-1">
-      <h1 className="text-xl mb-4 font-semibold">BRANCH</h1>
-      <div className="bg-white p-3 rounded-lg shadow-sm">
+    <div className="p-4">
+      <h1 className="text-xl mb-4 font-semibold">Branches</h1>
+      <div className="bg-white p-4 rounded-lg shadow-sm">
+        {/* Form Section */}
         <div className="mb-4 bg-slate-100 p-4 rounded-lg">
           <div className="grid grid-cols-2 gap-4">
             <input
-              type="String"
+              type="text"
               placeholder="Name"
               name="name"
               value={formData.name}
-              onChange={handleInputChanges}
+              onChange={handleInputChange}
               className="p-2 border rounded-md outline-none"
             />
             <input
@@ -217,6 +237,7 @@ const Branch = () => {
           </div>
         </div>
 
+        {/* Search and Items Per Page Section */}
         <div className="mb-4 bg-slate-100 p-4 rounded-lg flex justify-between items-center">
           <div className="flex items-center bg-blue-500 rounded-lg">
             <label htmlFor="itemsPerPage" className="mr-2 ml-2 text-white text-sm">Show:</label>
@@ -226,52 +247,62 @@ const Branch = () => {
               value={itemsPerPage}
               onChange={(e) => setItemsPerPage(Number(e.target.value))}
             >
-              {[5, 10, 15, 20].map(num => (
-                <option key={num} value={num}>{num}</option>
+              {[5, 10, 15, 20].map(option => (
+                <option key={option} value={option}>{option}</option>
               ))}
             </select>
           </div>
-          <div className="flex items-center">
+          <div className="relative">
             <input
               type="text"
-              placeholder="Search..."
-              className="border rounded-l-md p-1 outline-none"
+              placeholder="Search Branch"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="p-2 border rounded-lg pl-10 outline-none"
             />
-            <MagnifyingGlassIcon className="text-white bg-blue-500 rounded-r-lg h-8 w-8 border p-1.5" />
+            <MagnifyingGlassIcon className="absolute top-2 left-2 h-5 w-5 text-gray-500" />
           </div>
         </div>
 
+        {/* Branches Table */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border">
             <thead>
               <tr className="bg-slate-100">
                 <th className="border p-2 text-left">SR.</th>
-                <th className="border p-2 text-left">BRANCH</th>
+                <th className="border p-2 text-left">Name</th>
                 <th className="border p-2 text-left">Address</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
+                <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Delete</th>
+                <th className="border p-2 text-left">Access</th>
               </tr>
             </thead>
             <tbody>
               {paginatedBranches.map((branch, index) => (
                 <tr key={branch.id}>
-                  <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                  <td className="border p-2">{index + 1 + (currentPage - 1) * itemsPerPage}</td>
                   <td className="border p-2">{branch.name}</td>
                   <td className="border p-2">{branch.address}</td>
-                  <td className="border p-2">{branch.createdOn}</td>
-                  <td className="border p-2">{branch.updatedOn}</td>
-                  <td className="border p-2">
-                    <button onClick={() => handleEditBranch((currentPage - 1) * itemsPerPage + index)} className="text-blue-500">
+                  <td className="border p-2">{formatDateTime(branch.createdOn)}</td>
+                  <td className="border p-2">{formatDateTime(branch.updatedOn)}</td>
+                  <td className="border p-2">{branch.isActive ? 'Active' : 'Inactive'}</td>
+                  <td className="border p-2 text-center">
+                    <button onClick={() => handleEditBranch((currentPage - 1) * itemsPerPage + index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
-                  <td className="border p-2">
-                    <button onClick={() => handleDeleteBranch((currentPage - 1) * itemsPerPage + index)} className="text-red-500">
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
+                  <td className="border p-2 text-center">
+                    <button
+                      onClick={() => handleToggleActive(branch)}
+                      className={`p-1 rounded-full ${branch.isActive ? 'bg-green-500' : 'bg-red-500'}`}
+                    >
+                      {branch.isActive ? (
+                        <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
+                      ) : (
+                        <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
+                      )}
                     </button>
                   </td>
                 </tr>
@@ -280,30 +311,7 @@ const Branch = () => {
           </table>
         </div>
 
-        {deleteModalVisible && (
-          <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
-              <p>Are you sure you want to delete the branch <strong>{branchToDelete?.name}</strong>?</p>
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={() => setDeleteModalVisible(false)}
-                  className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleDeleteConfirmed(branchToDelete.id)} // Call the updated function
-                  className="bg-red-500 text-white rounded-lg px-4 py-2"
-                >
-                  Confirm
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-
+        {/* Pagination */}
         <div className="flex justify-between items-center mt-4">
           <div>
             <span className="text-sm text-gray-700">
@@ -333,7 +341,34 @@ const Branch = () => {
           </div>
         </div>
       </div>
-      {error && <div className="text-red-500 mt-4">{error}</div>}
+
+      {/* Toggle Active Modal */}
+      {modalVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">Confirm Status Change</h2>
+            <p className="mb-4">Are you sure you want to {toggleBranch.isActive ? 'deactivate' : 'activate'} this branch?</p>
+            <div className="flex justify-end gap-4">
+              <button onClick={() => setModalVisible(false)} className="bg-gray-300 p-2 rounded-lg">Cancel</button>
+              <button onClick={confirmToggleActiveStatus} className="bg-blue-500 text-white p-2 rounded-lg">Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal
+      {deleteModalVisible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
+            <p className="mb-4">Are you sure you want to delete this branch?</p>
+            <div className="flex justify-end gap-4">
+              <button onClick={() => setDeleteModalVisible(false)} className="bg-gray-300 p-2 rounded-lg">Cancel</button>
+              <button onClick={() => handleDeleteConfirmed(branchToDelete.id)} className="bg-red-500 text-white p-2 rounded-lg">Confirm</button>
+            </div>
+          </div>
+        </div>
+      )} */}
     </div>
   );
 };
