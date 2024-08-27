@@ -18,7 +18,7 @@ const Branch = () => {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    isActive: true, // Default to true for active
+    isActive: true, 
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
