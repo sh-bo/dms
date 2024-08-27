@@ -131,7 +131,8 @@ const LoginPage = () => {
                     localStorage.setItem('UserName', response.data.name);
 
                     setAlertMessage('Login successful!');
-                    navigate('/'); 
+                    console.log('Login successful, navigating to dashboard.');
+                    navigate('/'); // Redirecting to the dashboard
                 }
             } catch (error) {
                 if (error.response && error.response.status === 401) {
