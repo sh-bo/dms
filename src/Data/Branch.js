@@ -18,7 +18,7 @@ const Branch = () => {
   const [formData, setFormData] = useState({
     name: '',
     address: '',
-    isActive: true, 
+    isActive: true,
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
@@ -177,28 +177,38 @@ const Branch = () => {
     }
   };
 
-  const filteredBranches = branches.filter(branch =>
-    Object.values(branch).some(value =>
-      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
-
-  const totalItems = filteredBranches.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedBranches = filteredBranches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  // Function to format date and time in Indian format
-  const formatDateTime = (dateTime) => {
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
     const options = {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'Asia/Kolkata'
+      // hour12: true 
     };
-    return new Date(dateTime).toLocaleString('en-IN', options);
+    return date.toLocaleString('en-GB', options).replace(',', '');
   };
+
+  const filteredBranches = branches.filter(branch => {
+    const statusText = branch.isActive ? 'active' : 'inactive'; 
+    const createdOnText = formatDate(branch.createdOn);
+    const updatedOnText = formatDate(branch.updatedOn);
+  
+    return (
+      (branch.name && branch.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (branch.address && branch.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      statusText.includes(searchTerm.toLowerCase()) || 
+      createdOnText.includes(searchTerm.toLowerCase()) || 
+      updatedOnText.includes(searchTerm.toLowerCase()) 
+    );
+  });
+  
+  const sortedBranches = filteredBranches.sort((a, b) => b.isActive - a.isActive);
+
+  const totalItems = sortedBranches.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const paginatedBranches = sortedBranches.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-4">
@@ -285,8 +295,8 @@ const Branch = () => {
                   <td className="border p-2">{index + 1 + (currentPage - 1) * itemsPerPage}</td>
                   <td className="border p-2">{branch.name}</td>
                   <td className="border p-2">{branch.address}</td>
-                  <td className="border p-2">{formatDateTime(branch.createdOn)}</td>
-                  <td className="border p-2">{formatDateTime(branch.updatedOn)}</td>
+                  <td className="border p-2">{formatDate(branch.createdOn)}</td>
+                  <td className="border p-2">{formatDate(branch.updatedOn)}</td>
                   <td className="border p-2">{branch.isActive ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2 text-center">
                     <button onClick={() => handleEditBranch((currentPage - 1) * itemsPerPage + index)}>
