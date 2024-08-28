@@ -18,8 +18,6 @@ const Role = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [roleToToggle, setRoleToToggle] = useState(null);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [roleToDelete, setRoleToDelete] = useState(null);
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -103,35 +101,6 @@ const Role = () => {
     }
   };
 
-  const handleDeleteRole = (index) => {
-    setRoleToDelete(roles[index]); // Set the role to delete
-    setDeleteModalVisible(true); // Show the delete modal
-  };
-  
-  const handleDeleteConfirmed = async () => {
-    if (roleToDelete) {
-      try {
-        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
-        await axios.delete(`${ROLE_API}/delete/${roleToDelete.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        const updatedRoles = roles.filter(role => role.id !== roleToDelete.id);
-        setRoles(updatedRoles);
-        setDeleteModalVisible(false); // Close the delete modal
-        setRoleToDelete(null); // Clear the role to delete
-        alert('Role deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting role:', error.response ? error.response.data : error.message);
-        alert('Failed to deleting the role. Please try again.'); 
-      }
-    } else {
-      console.error('No role selected for deletion');
-    }
-  };
-  
-
   const handleToggleActiveStatus = (role) => {
     setRoleToToggle(role);
     setModalVisible(true);
@@ -173,16 +142,39 @@ const Role = () => {
       console.error('No role selected for status toggle');
     }
   };
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric', 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        // hour12: true 
+    };
+    return date.toLocaleString('en-GB', options).replace(',', '');
+};
 
-  const filteredRoles = roles.filter(role =>
-    Object.values(role).some(value =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
+const filteredRoles = roles.filter(role => {
+  const statusText = role.isActive === 1 ? 'active' : 'inactive';
+  const createdOnText = formatDate(role.createdOn);
+  const updatedOnText = formatDate(role.updatedOn);
+
+  return (
+    (role.role && role.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (role.branch?.name && role.branch.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    statusText.includes(searchTerm.toLowerCase()) ||
+    createdOnText.includes(searchTerm.toLowerCase()) ||
+    updatedOnText.includes(searchTerm.toLowerCase())
   );
+});
 
-  const totalItems = filteredRoles.length;
+
+  const sortedRoles = filteredRoles.sort((a, b) => b.isActive - a.isActive);
+
+  const totalItems = sortedRoles.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedRoles = filteredRoles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedRoles = sortedRoles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-1">
@@ -248,7 +240,6 @@ const Role = () => {
                 <th className="border p-2 text-left">Updated On</th>
                 <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Delete</th>
                 <th className="border p-2 text-left">Access</th>
               </tr>
             </thead>
@@ -257,17 +248,12 @@ const Role = () => {
                 <tr key={role.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td className="border p-2">{role.role}</td>
-                  <td className="border p-2">{new Date(role.createdOn).toLocaleDateString()}</td>
-                  <td className="border p-2">{new Date(role.updatedOn).toLocaleDateString()}</td>
+                  <td className="border px-4 py-2">{formatDate(role.createdOn)}</td>
+                  <td className="border px-4 py-2">{formatDate(role.updatedOn)}</td>
                   <td className="border p-2">{role.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditRole(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
-                    </button>
-                  </td>
-                  <td className="border p-2">
-                    <button onClick={() => handleDeleteRole(index)}>
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
@@ -319,28 +305,6 @@ const Role = () => {
         </div>
       </div>
 
-      {deleteModalVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
-            <p>Are you sure you want to delete the role <strong>{roleToDelete?.role}</strong>?</p>
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setDeleteModalVisible(false)}
-                className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteConfirmed} // Call the function to delete the role
-                className="bg-red-500 text-white rounded-lg px-4 py-2"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {modalVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">

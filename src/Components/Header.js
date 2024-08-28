@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Bars3Icon, KeyIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/solid';
 import adminPhoto from '../Assets/profile.svg';
 
-function Header({ toggleSidebar }) {
+function Header({ toggleSidebar, userName }) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const email = localStorage.getItem('email');
 
   const handleLogout = () => {
     localStorage.removeItem('Token');
@@ -60,7 +61,7 @@ function Header({ toggleSidebar }) {
             onClick={toggleDropdown}
           >
             <h1 className="text-3xl pb-2 mr-1 font-light">|</h1>
-            <span className="font-light text-sm mr-1">SYSTEM ADMIN</span>
+            <span className="font-light text-sm mr-1">{email}</span>
             <img src={adminPhoto} alt="Admin" className="h-8 w-8 rounded-full" />
           </div>
           {dropdownOpen && (

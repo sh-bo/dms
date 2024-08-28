@@ -27,8 +27,6 @@ const Department = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [toggleDepartment, setToggleDepartment] = useState(null);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [departmentToDelete, setDepartmentToDelete] = useState(null);
 
   // Retrieve token from localStorage
   const token = localStorage.getItem('tokenKey');
@@ -66,10 +64,10 @@ const Department = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-  
+
     // Allow only letters and spaces
     const regex = /^[A-Za-z\s]*$/;
-  
+
     if (regex.test(value) || value === "") {
       setFormData((prevData) => ({
         ...prevData,
@@ -77,6 +75,19 @@ const Department = () => {
       }));
     }
   };
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      // hour12: true
+    };
+    return date.toLocaleString('en-GB', options).replace(',', '');
+  };
+
 
   const handleBranchChange = (e) => {
     const selectedBranch = branches.find(branch => branch.id === parseInt(e.target.value));
@@ -104,7 +115,7 @@ const Department = () => {
         alert('Department added successfully!');
       } catch (error) {
         console.error('Error adding department:', error);
-        alert('Failed to adding the Department. Please try again.'); 
+        alert('Failed to adding the Department. Please try again.');
       }
     } else {
       console.error('Form data is incomplete');
@@ -139,34 +150,13 @@ const Department = () => {
         alert('Department updated successfully!');
       } catch (error) {
         console.error('Error updating department:', error);
-        alert('Failed to updating the Department. Please try again.'); 
+        alert('Failed to updating the Department. Please try again.');
       }
     } else {
       console.error('Form data is incomplete');
     }
   };
 
-  const handleDeleteDepartment = (index) => {
-    setDepartmentToDelete(departments[index]); // Set the department to delete
-    setDeleteModalVisible(true); // Show the delete modal
-  };
-  const handleDeleteConfirmed = async (id) => {
-    try {
-      await axios.delete(`${DEPAETMENT_API}/delete/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const updatedDepartments = departments.filter(department => department.id !== id);
-      setDepartments(updatedDepartments);
-      setDeleteModalVisible(false); // Close the delete modal
-      setDepartmentToDelete(null); // Clear the department to delete
-      alert('Department deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting department:', error);
-      alert('Failed to deleting the Department. Please try again.'); 
-    }
-  };
 
   const handleToggleActive = (department) => {
     setToggleDepartment(department);
@@ -200,22 +190,32 @@ const Department = () => {
         alert('Status Changed successfully!');
       } catch (error) {
         console.error('Error toggling department status:', error);
-        alert('Failed to changing the Status. Please try again.'); 
+        alert('Failed to changing the Status. Please try again.');
       }
     } else {
       console.error('No department selected for status toggle');
     }
   };
 
-  const filteredDepartments = departments.filter(department =>
-    Object.values(department).some(value =>
-      value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  const filteredDepartments = departments.filter(department => {
+    const statusText = department.isActive === 1 ? 'active' : 'inactive';
+    const createdOnText = formatDate(department.createdOn);
+    const updatedOnText = formatDate(department.updatedOn);
 
-  const totalItems = filteredDepartments.length;
+    return (
+      department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      department.branch?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      statusText.includes(searchTerm.toLowerCase()) ||
+      createdOnText.includes(searchTerm.toLowerCase()) ||
+      updatedOnText.includes(searchTerm.toLowerCase())
+    );
+  });
+
+  const sortedDepartments = filteredDepartments.sort((a, b) => b.isActive - a.isActive);
+
+  const totalItems = sortedDepartments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedDepartments = filteredDepartments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedDepartments = sortedDepartments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-4">
@@ -296,7 +296,6 @@ const Department = () => {
                 <th className="border p-2 text-left">Updated On</th>
                 <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Delete</th>
                 <th className="border p-2 text-left">Access</th>
               </tr>
             </thead>
@@ -306,17 +305,12 @@ const Department = () => {
                   <td className="border p-2">{index + 1 + (currentPage - 1) * itemsPerPage}</td>
                   <td className="border p-2">{department.name}</td>
                   <td className="border p-2">{department.branch?.name || ''}</td>
-                  <td className="border p-2">{new Date(department.createdOn).toLocaleDateString()}</td>
-                  <td className="border p-2">{new Date(department.updatedOn).toLocaleDateString()}</td>
+                  <td className="border px-4 py-2">{formatDate(department.createdOn)}</td>
+                  <td className="border px-4 py-2">{formatDate(department.updatedOn)}</td>
                   <td className="border p-2">{department.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditDepartment(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
-                    </button>
-                  </td>
-                  <td className="border p-2">
-                    <button onClick={() => handleDeleteDepartment(index)}>
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
@@ -367,29 +361,6 @@ const Department = () => {
           </div>
         </div>
       </div>
-      
-      {deleteModalVisible && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
-            <p>Are you sure you want to delete the department <strong>{departmentToDelete?.name}</strong>?</p>
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setDeleteModalVisible(false)}
-                className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteConfirmed(departmentToDelete.id)} // Call a function to delete the department
-                className="bg-red-500 text-white rounded-lg px-4 py-2"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modal for Confirming Status Change */}
       {modalVisible && (
