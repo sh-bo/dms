@@ -116,12 +116,12 @@ const LoginPage = () => {
                 return;
             }
 
-            setIsButtonDisabled(true); // Disable button when logging in
+            setIsButtonDisabled(true);
 
             try {
                 const response = await axios.post(LOGIN_API_verify, {
                     email: formData.username,
-                    otp: otp
+                    otp: otp,
                 });
 
                 if (response.status === 200) {
@@ -129,19 +129,17 @@ const LoginPage = () => {
                     localStorage.setItem(tokenKey, response.data.token);
                     localStorage.setItem('email', formData.username);
                     localStorage.setItem('UserName', response.data.name);
+                    localStorage.setItem('employeeType', response.data.employeeType);
 
                     setAlertMessage('Login successful!');
-                    console.log('Login successful, navigating to dashboard.');
-                    navigate('/'); // Redirecting to the dashboard
+
+                    navigate(response.data.employeeType === 'ADMIN' ? '/admin-dashboard' : '/user-dashboard');
                 }
             } catch (error) {
-                if (error.response && error.response.status === 401) {
-                    setAlertMessage('Invalid OTP.');
-                } else {
-                    setAlertMessage('An error occurred. Please try again.');
-                }
+                const message = error.response?.data?.message || 'An error occurred. Please try again.';
+                setAlertMessage(message);
             } finally {
-                setIsButtonDisabled(false); // Enable button after login attempt
+                setIsButtonDisabled(false);
             }
         } else {
             if (formData.captcha !== captcha.map(item => item.character).join('')) {

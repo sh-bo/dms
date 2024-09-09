@@ -1,5 +1,5 @@
 import { TYPE_API } from '../API/apiConfig';
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, LockClosedIcon, LockOpenIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -12,8 +12,8 @@ const Type = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [typeToDelete, setTypeToDelete] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [typeToToggle, setTypeToToggle] = useState(null);
 
   useEffect(() => {
     const fetchTypes = async () => {
@@ -95,43 +95,81 @@ const Type = () => {
     }
   };
 
-  const handleDeleteType = (index) => {
-    setTypeToDelete(types[index]); // Set the type to delete
-    setDeleteModalVisible(true); // Show the delete modal
+  const handleToggleActiveStatus = (type) => {
+    setTypeToToggle(type);
+    setModalVisible(true);
   };
 
-  const handleDeleteConfirmed = async () => {
-    if (typeToDelete) {
+  const confirmToggleActiveStatus = async () => {
+    if (typeToToggle) {
       try {
+        const updatedType = {
+          ...typeToToggle,
+          isActive: typeToToggle.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
+          updatedOn: new Date().toISOString(),
+        };
+
         const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
-        await axios.delete(`${TYPE_API}/delete/${typeToDelete.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        const updatedTypes = types.filter(type => type.id !== typeToDelete.id);
+        const response = await axios.put(
+          `${TYPE_API}/updatestatus/${updatedType.id}`, // Update API endpoint
+          updatedType,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const updatedTypes = types.map(type =>
+          type.id === updatedType.id ? response.data : type
+        );
         setTypes(updatedTypes);
-        setDeleteModalVisible(false); // Close the delete modal
-        setTypeToDelete(null); // Clear the type to delete
-        alert('Type Deleted successfully!');
+        setModalVisible(false);
+        setTypeToToggle(null);
+        alert('Status Changed successfully!');
       } catch (error) {
-        console.error('Error deleting type:', error.response ? error.response.data : error.message);
-        alert('Failed to deleting the type. Please try again.'); 
+        console.error('Error toggling type status:', error.response ? error.response.data : error.message);
+        alert('Failed to changing the status. Please try again.');
       }
     } else {
-      console.error('No type selected for deletion');
+      console.error('No type selected for status toggle');
     }
   };
   
-  const filteredTypes = types.filter(type =>
-    Object.values(type).some(value =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      // hour12: true 
+    };
+    return date.toLocaleString('en-GB', options).replace(',', '');
+  };
 
-  const totalItems = filteredTypes.length;
+  const filteredTypes = types.filter(type => {
+    const statusText = type.isActive === 1 ? 'active' : 'inactive';
+    const createdOnText = formatDate(type.createdOn);
+    const updatedOnText = formatDate(type.updatedOn);
+
+    return (
+      (type.name && type.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      statusText.includes(searchTerm.toLowerCase()) ||
+      createdOnText.includes(searchTerm.toLowerCase()) ||
+      updatedOnText.includes(searchTerm.toLowerCase())
+    );
+  });
+
+
+  const sortedTypes = filteredTypes.sort((a, b) => b.isActive - a.isActive);
+
+  const totalItems = sortedTypes.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedTypes = filteredTypes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedTypes = sortedTypes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
 
   return (
     <div className="p-1">
@@ -195,8 +233,9 @@ const Type = () => {
                 <th className="border p-2 text-left">Type</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
+                <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Delete</th>
+                <th className="border p-2 text-left">Access</th>
               </tr>
             </thead>
             <tbody>
@@ -204,16 +243,24 @@ const Type = () => {
                 <tr key={type.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td className="border p-2">{type.name}</td>
-                  <td className="border p-2">{type.createdOn}</td>
-                  <td className="border p-2">{type.updatedOn}</td>
+                  <td className="border px-4 py-2">{formatDate(type.createdOn)}</td>
+                  <td className="border px-4 py-2">{formatDate(type.updatedOn)}</td>
+                  <td className="border p-2">{type.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditType(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button onClick={() => handleDeleteType(index)}>
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
+                    <button
+                      onClick={() => handleToggleActiveStatus(type)}
+                      className={`p-1 rounded-full ${type.isActive === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                    >
+                      {type.isActive === 1 ? (
+                        <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
+                      ) : (
+                        <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
+                      )}
                     </button>
                   </td>
                 </tr>
@@ -251,21 +298,21 @@ const Type = () => {
           </div>
         </div>
       </div>
-      {deleteModalVisible && (
+      {modalVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
-            <p>Are you sure you want to delete the type <strong>{typeToDelete?.name}</strong>?</p>
+            <h2 className="text-xl font-semibold mb-4">Confirm Status Change</h2>
+            <p>Are you sure you want to {typeToToggle?.isActive === 1 ? 'deactivate' : 'activate'} the type <strong>{typeToToggle.name}</strong>?</p>
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => setDeleteModalVisible(false)}
+                onClick={() => setModalVisible(false)}
                 className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
               >
                 Cancel
               </button>
               <button
-                onClick={handleDeleteConfirmed} // Call the function to delete the type
-                className="bg-red-500 text-white rounded-lg px-4 py-2"
+                onClick={confirmToggleActiveStatus}
+                className="bg-blue-500 text-white rounded-lg px-4 py-2"
               >
                 Confirm
               </button>

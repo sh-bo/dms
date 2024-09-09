@@ -36,10 +36,10 @@ const Role = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-  
+
     // Allow only letters and spaces
     const regex = /^[A-Za-z\s]*$/;
-  
+
     if (regex.test(value) || value === "") {
       setFormData((prevData) => ({
         ...prevData,
@@ -65,7 +65,7 @@ const Role = () => {
         alert('Role added successfully!');
       } catch (error) {
         console.error('Error adding role:', error);
-        alert('Failed to adding the role. Please try again.'); 
+        alert('Failed to adding the role. Please try again.');
       }
     }
   };
@@ -96,7 +96,7 @@ const Role = () => {
         alert('Role Updated successfully!');
       } catch (error) {
         console.error('Error updating role:', error.response ? error.response.data : error.message);
-        alert('Failed to updating the role. Please try again.'); 
+        alert('Failed to updating the role. Please try again.');
       }
     }
   };
@@ -117,7 +117,7 @@ const Role = () => {
 
         const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
         const response = await axios.put(
-          `${ROLE_API}/update/${updatedRole.id}`, // Update API endpoint
+          `${ROLE_API}/updatestatus/${updatedRole.id}`, // Update API endpoint
           updatedRole,
           {
             headers: {
@@ -136,7 +136,7 @@ const Role = () => {
         alert('Status Changed successfully!');
       } catch (error) {
         console.error('Error toggling role status:', error.response ? error.response.data : error.message);
-        alert('Failed to changing the status. Please try again.'); 
+        alert('Failed to changing the status. Please try again.');
       }
     } else {
       console.error('No role selected for status toggle');
@@ -144,30 +144,29 @@ const Role = () => {
   };
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const options = { 
-        day: '2-digit', 
-        month: '2-digit', 
-        year: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        // hour12: true 
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      // hour12: true 
     };
     return date.toLocaleString('en-GB', options).replace(',', '');
-};
+  };
 
-const filteredRoles = roles.filter(role => {
-  const statusText = role.isActive === 1 ? 'active' : 'inactive';
-  const createdOnText = formatDate(role.createdOn);
-  const updatedOnText = formatDate(role.updatedOn);
+  const filteredRoles = roles.filter(role => {
+    const statusText = role.isActive === 1 ? 'active' : 'inactive';
+    const createdOnText = formatDate(role.createdOn);
+    const updatedOnText = formatDate(role.updatedOn);
 
-  return (
-    (role.role && role.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (role.branch?.name && role.branch.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    statusText.includes(searchTerm.toLowerCase()) ||
-    createdOnText.includes(searchTerm.toLowerCase()) ||
-    updatedOnText.includes(searchTerm.toLowerCase())
-  );
-});
+    return (
+      (role.role && role.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      statusText.includes(searchTerm.toLowerCase()) ||
+      createdOnText.includes(searchTerm.toLowerCase()) ||
+      updatedOnText.includes(searchTerm.toLowerCase())
+    );
+  });
 
 
   const sortedRoles = filteredRoles.sort((a, b) => b.isActive - a.isActive);

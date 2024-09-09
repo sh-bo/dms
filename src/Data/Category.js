@@ -1,5 +1,5 @@
 import { CATEGORI_API } from '../API/apiConfig';
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -12,8 +12,8 @@ const Category = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [categoryToToggle, setCategoryToToggle] = useState(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -95,43 +95,80 @@ const Category = () => {
     }
   };
 
-  const handleDeleteCategory = (index) => {
-    setCategoryToDelete(categories[index]);
-    setDeleteModalVisible(true);
+  const handleToggleActiveStatus = (category) => {
+    setCategoryToToggle(category);
+    setModalVisible(true);
   };
 
-  const handleDeleteConfirmed = async () => {
-    if (categoryToDelete) {
+  const confirmToggleActiveStatus = async () => {
+    if (categoryToToggle) {
       try {
-        const token = localStorage.getItem(tokenKey);
-        await axios.delete(`${CATEGORI_API}/delete/${categoryToDelete.id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const updatedCategories = categories.filter(category => category.id !== categoryToDelete.id);
+        const updatedCategory = {
+          ...categoryToToggle,
+          isActive: categoryToToggle.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
+          updatedOn: new Date().toISOString(),
+        };
+
+        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
+        const response = await axios.put(
+          `${CATEGORI_API}/updatestatus/${updatedCategory.id}`, // Update API endpoint
+          updatedCategory,
+          {
+            headers: {
+              'Content-Category': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const updatedCategories = categories.map(category =>
+          category.id === updatedCategory.id ? response.data : category
+        );
         setCategories(updatedCategories);
-        setDeleteModalVisible(false);
-        setCategoryToDelete(null);
-        alert('Categories deleted successfully!');
+        setModalVisible(false);
+        setCategoryToToggle(null);
+        alert('Status Changed successfully!');
       } catch (error) {
-        console.error('Error deleting category:', error.response ? error.response.data : error.message);
-        alert('Failed to deleting the Categories. Please try again.'); 
+        console.error('Error toggling Category status:', error.response ? error.response.data : error.message);
+        alert('Failed to changing the status. Please try again.');
       }
     } else {
-      console.error('No category selected for deletion');
+      console.error('No Category selected for status toggle');
     }
   };
+  
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      // hour12: true 
+    };
+    return date.toLocaleString('en-GB', options).replace(',', '');
+  };
 
-  const filteredCategories = categories.filter(category =>
-    Object.values(category).some(value =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  const filteredCategories = categories.filter(category => {
+    const statusText = category.isActive === 1 ? 'active' : 'inactive';
+    const createdOnText = formatDate(category.createdOn);
+    const updatedOnText = formatDate(category.updatedOn);
 
-  const totalItems = filteredCategories.length;
+    return (
+      (category.name && category.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      statusText.includes(searchTerm.toLowerCase()) ||
+      createdOnText.includes(searchTerm.toLowerCase()) ||
+      updatedOnText.includes(searchTerm.toLowerCase())
+    );
+  });
+
+
+  const sortedCategories = filteredCategories.sort((a, b) => b.isActive - a.isActive);
+
+  const totalItems = sortedCategories.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedCategories = filteredCategories.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedCategories = sortedCategories.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-1">
@@ -195,8 +232,9 @@ const Category = () => {
                 <th className="border p-2 text-left">Category</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
+                <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Delete</th>
+                <th className="border p-2 text-left">Access</th>
               </tr>
             </thead>
             <tbody>
@@ -204,16 +242,24 @@ const Category = () => {
                 <tr key={category.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td className="border p-2">{category.name}</td>
-                  <td className="border p-2">{category.createdOn}</td>
-                  <td className="border p-2">{category.updatedOn}</td>
+                  <td className="border p-2">{formatDate(category.createdOn)}</td>
+                  <td className="border p-2">{formatDate(category.updatedOn)}</td>
+                  <td className="border p-2">{category.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditCategory(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button onClick={() => handleDeleteCategory(index)}>
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
+                    <button
+                      onClick={() => handleToggleActiveStatus(category)}
+                      className={`p-1 rounded-full ${category.isActive === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                    >
+                      {category.isActive === 1 ? (
+                        <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
+                      ) : (
+                        <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
+                      )}
                     </button>
                   </td>
                 </tr>
@@ -252,14 +298,24 @@ const Category = () => {
         </div>
       </div>
 
-      {deleteModalVisible && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-4">
-            <h2 className="text-lg font-semibold">Delete Category</h2>
-            <p>Are you sure you want to delete <strong>{categoryToDelete?.name}</strong>?</p>
-            <div className="flex justify-end mt-4">
-              <button onClick={() => setDeleteModalVisible(false)} className="bg-gray-400 text-white rounded-md px-4 py-2 mr-2">Cancel</button>
-              <button onClick={handleDeleteConfirmed} className="bg-red-600 text-white rounded-md px-4 py-2">Delete</button>
+      {modalVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Confirm Status Change</h2>
+            <p>Are you sure you want to {categoryToToggle?.isActive === 1 ? 'deactivate' : 'activate'} the category <strong>{categoryToToggle.category}</strong>?</p>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setModalVisible(false)}
+                className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmToggleActiveStatus}
+                className="bg-blue-500 text-white rounded-lg px-4 py-2"
+              >
+                Confirm
+              </button>
             </div>
           </div>
         </div>

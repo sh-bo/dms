@@ -28,9 +28,18 @@ const Document = () => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [documentToToggle, setDocumentToToggle] = useState(null);
+  const [fieldsDisabled, setFieldsDisabled] = useState(false);
+  const [isUploadEnabled, setIsUploadEnabled] = useState(false);
+
 
 
   const token = localStorage.getItem('tokenKey'); // Retrieve token from local storage
+
+  useEffect(() => {
+    const { title, subject, category, year, type } = formData;
+    const isFormFilled = title && subject && category && year && type && selectedFiles.length > 0;
+    setIsUploadEnabled(isFormFilled);
+  }, [formData, selectedFiles]);
 
   useEffect(() => {
     fetchOptions();
@@ -67,7 +76,7 @@ const Document = () => {
 
   const fetchDocuments = async () => {
     try {
-      const response = await axios.get(`${DOCUMENTHEADER_API}/findAll`, {
+      const response = await axios.get(`${DOCUMENTHEADER_API}/find-all`, {
         headers: {
           'Authorization': `Bearer ${token}` // Add token to the headers
         }
@@ -104,15 +113,31 @@ const Document = () => {
     setFilePaths(validFiles.map(file => file.name)); // Track file names
   };
 
-  const handleUpload = async () => {
-    if (selectedFiles.length === 0) {
-      alert('Please select files.');
-      return;
+  const handleDiscard = () => {
+    setUploadedFileNames([]);// Re-enable the fields when all files are discarded
+  };
+
+  const handleDiscardAll = () => {
+    setUploadedFileNames([]);
+    setFieldsDisabled(false);
+  };
+
+  const handleDiscardFile = (index) => {
+    const updatedFileNames = [...uploadedFileNames];
+    updatedFileNames.splice(index, 1);
+    setUploadedFileNames(updatedFileNames);
+
+    if (updatedFileNames.length === 0) {
+      setFieldsDisabled(false); // Re-enable fields if no files are left
     }
+  };
+
+  const handleUpload = async () => {
+    if (!isUploadEnabled) return;
 
     const formDataToUpload = new FormData();
     Array.from(selectedFiles).forEach(file => {
-      formDataToUpload.append('images', file); // Change 'images' to 'files' if needed
+      formDataToUpload.append('images', file);
     });
 
     try {
@@ -120,7 +145,7 @@ const Document = () => {
         method: 'POST',
         body: formDataToUpload,
         headers: {
-          'Authorization': `Bearer ${token}` // Ensure the token is valid
+          'Authorization': `Bearer ${token}`
         }
       });
 
@@ -129,8 +154,7 @@ const Document = () => {
         alert(`Files uploaded successfully: ${result}`);
         setUploadedFileNames([...uploadedFileNames, ...Array.from(selectedFiles).map(file => file.name)]);
         setSelectedFiles([]);
-
-        // Disable fields after any upload
+        setFieldsDisabled(true);
       } else {
         const errorText = await response.text();
         alert(`Failed to upload files: ${errorText}`);
@@ -142,9 +166,6 @@ const Document = () => {
     }
   };
 
-  const handleDiscard = () => {
-    setUploadedFileNames([]);// Re-enable the fields when all files are discarded
-  };
 
   const getFileStyle = (fileName) => {
     if (fileName.endsWith('.pdf')) {
@@ -284,6 +305,7 @@ const Document = () => {
     setEditingIndex(index);
     setFormData(documents[index]);
   };
+  
   // const handleSaveEdit = async () => {
   //   if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
   //     try {
@@ -446,6 +468,7 @@ const Document = () => {
               name="title"
               value={formData.title}
               onChange={handleInputChange}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             />
             <input
@@ -454,12 +477,14 @@ const Document = () => {
               name="subject"
               value={formData.subject}
               onChange={handleInputChange}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             />
             <select
               name="category"
               value={formData.category?.id || ""}
               onChange={(e) => handleSelectChange(e, 'category')}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Category</option>
@@ -474,6 +499,7 @@ const Document = () => {
               name="year"
               value={formData.year?.id || ""}
               onChange={(e) => handleSelectChange(e, 'year')}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Year</option>
@@ -488,6 +514,7 @@ const Document = () => {
               name="type"
               value={formData.type?.id || ""}
               onChange={(e) => handleSelectChange(e, 'type')}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Type</option>
@@ -508,8 +535,11 @@ const Document = () => {
                   onChange={handleFileChange}
                   className="p-2 border rounded-md outline-none w-full"
                 />
-                <button onClick={handleUpload}
-                  className="bg-rose-900 ml-2 text-white rounded-xl p-2">
+                <button
+                  onClick={handleUpload}
+                  disabled={!isUploadEnabled}
+                  className={`ml-2 text-white rounded-xl p-2 ${isUploadEnabled ? 'bg-rose-900' : 'bg-gray-400'}`}
+                >
                   Upload
                 </button>
 
@@ -531,8 +561,8 @@ const Document = () => {
 
         <>
           {uploadedFileNames.length > 0 && (
-            <div style={{ padding: '1rem', backgroundColor: '#f1f5f9', borderRadius: '0.5rem' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div className="p-4 bg-slate-100 rounded-lg">
+              <div className="flex flex-wrap gap-4">
                 {uploadedFileNames.map((fileName, index) => (
                   <div
                     key={index}
@@ -546,16 +576,22 @@ const Document = () => {
                       ...getFileStyle(fileName), // Apply the style based on filename
                     }}
                   >
-                    <span style={{ marginRight: '0.5rem' }}>{fileName}</span>
+                    <span className="mr-4">{fileName}</span>
                     <button
                       style={{ color: '#ef4444', cursor: 'pointer', background: 'none', border: 'none' }}
-                      onClick={() => handleDiscard(index)}
+                      onClick={() => handleDiscardFile(index)}
                     >
                       <XMarkIcon style={{ width: '1.25rem', height: '1.25rem' }} />
                     </button>
                   </div>
                 ))}
               </div>
+              <button
+                className="mt-4 text-red-500"
+                onClick={handleDiscardAll}
+              >
+                Discard All
+              </button>
             </div>
           )}
         </>
