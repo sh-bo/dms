@@ -1,7 +1,7 @@
 import { YEAR_API } from '../API/apiConfig';
 import {
   ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon,
-  PlusCircleIcon, TrashIcon, MagnifyingGlassIcon
+  PlusCircleIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon
 } from '@heroicons/react/24/solid';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -15,8 +15,8 @@ const Year = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [yearToDelete, setYearToDelete] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [yearToToggle, setYearToToggle] = useState(null);
 
   useEffect(() => {
     // Fetch years from the server
@@ -61,7 +61,7 @@ const Year = () => {
         const response = await axios.post(`${YEAR_API}/save`, newYear, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setYears([...years, response.data]); // Add the new year to the list
+        setYears([...years, response.data]); 
         setFormData({ year: '' }); // Reset the form field
         alert('Year added successfully!');
       } catch (error) {
@@ -101,44 +101,80 @@ const Year = () => {
     }
   };
 
-  const handleDeleteYear = (index) => {
-    setYearToDelete(years[index]); // Set the year to delete
-    setDeleteModalVisible(true); // Show the delete modal
+  const handleToggleActiveStatus = (year) => {
+    setYearToToggle(year);
+    setModalVisible(true);
   };
 
-  const handleDeleteConfirmed = async () => {
-    if (yearToDelete) {
+  const confirmToggleActiveStatus = async () => {
+    if (yearToToggle) {
       try {
+        const updatedYear = {
+          ...yearToToggle,
+          isActive: yearToToggle.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
+          updatedOn: new Date().toISOString(),
+        };
+
         const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
-        await axios.delete(`${YEAR_API}/delete/${yearToDelete.id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        const updatedYears = years.filter(year => year.id !== yearToDelete.id);
+        const response = await axios.put(
+          `${YEAR_API}/updatestatus/${updatedYear.id}`, // Update API endpoint
+          updatedYear,
+          {
+            headers: {
+              'Content-Year': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const updatedYears = years.map(year =>
+          year.id === updatedYear.id ? response.data : year
+        );
         setYears(updatedYears);
-        setDeleteModalVisible(false); // Close the delete modal
-        setYearToDelete(null); // Clear the year to delete
-        alert('Year deleted successfully!'); // Notify the user of success
+        setModalVisible(false);
+        setYearToToggle(null);
+        alert('Status Changed successfully!');
       } catch (error) {
-        console.error('Error deleting year:', error.response ? error.response.data : error.message);
-        alert('Failed to delete the year. Please try again.'); // Notify user of error
+        console.error('Error toggling Year status:', error.response ? error.response.data : error.message);
+        alert('Failed to changing the status. Please try again.');
       }
     } else {
-      console.error('No year selected for deletion');
+      console.error('No Year selected for status toggle');
     }
   };
+  
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      // hour12: true 
+    };
+    return date.toLocaleString('en-GB', options).replace(',', '');
+  };
+
+  const filteredYears = years.filter(year => {
+    const statusText = year.isActive === 1 ? 'active' : 'inactive';
+    const createdOnText = formatDate(year.createdOn);
+    const updatedOnText = formatDate(year.updatedOn);
+
+    return (
+      (year.year && year.year.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      statusText.includes(searchTerm.toLowerCase()) ||
+      createdOnText.includes(searchTerm.toLowerCase()) ||
+      updatedOnText.includes(searchTerm.toLowerCase())
+    );
+  });
 
 
-  const filteredYears = years.filter(year =>
-    Object.values(year).some(value =>
-      value.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  const sortedYears = filteredYears.sort((a, b) => b.isActive - a.isActive);
 
-  const totalItems = filteredYears.length;
+  const totalItems = sortedYears.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedYears = filteredYears.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedYears = sortedYears.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-1">
@@ -206,8 +242,9 @@ const Year = () => {
                 <th className="border p-2 text-left">Year</th>
                 <th className="border p-2 text-left">Created On</th>
                 <th className="border p-2 text-left">Updated On</th>
+                <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Delete</th>
+                <th className="border p-2 text-left">Access</th>
               </tr>
             </thead>
             <tbody>
@@ -215,16 +252,24 @@ const Year = () => {
                 <tr key={year.id}>
                   <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
                   <td className="border p-2">{year.name}</td>
-                  <td className="border p-2">{year.createdOn}</td>
-                  <td className="border p-2">{year.updatedOn}</td>
+                  <td className="border px-4 py-2">{formatDate(year.createdOn)}</td>
+                  <td className="border px-4 py-2">{formatDate(year.updatedOn)}</td>
+                  <td className="border p-2">{year.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditYear(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button onClick={() => handleDeleteYear(index)}>
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1" />
+                    <button
+                      onClick={() => handleToggleActiveStatus(year)}
+                      className={`p-1 rounded-full ${year.isActive === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                    >
+                      {year.isActive === 1 ? (
+                        <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
+                      ) : (
+                        <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
+                      )}
                     </button>
                   </td>
                 </tr>
@@ -263,21 +308,21 @@ const Year = () => {
         </div>
       </div>
 
-      {deleteModalVisible && (
+      {modalVisible && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
-            <p>Are you sure you want to delete the year <strong>{yearToDelete.name}</strong>?</p>
+            <h2 className="text-xl font-semibold mb-4">Confirm Status Change</h2>
+            <p>Are you sure you want to {yearToToggle?.isActive === 1 ? 'deactivate' : 'activate'} the year <strong>{yearToToggle.year}</strong>?</p>
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => setDeleteModalVisible(false)}
+                onClick={() => setModalVisible(false)}
                 className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
               >
                 Cancel
               </button>
               <button
-                onClick={handleDeleteConfirmed} // Call the function to delete the year
-                className="bg-red-500 text-white rounded-lg px-4 py-2"
+                onClick={confirmToggleActiveStatus}
+                className="bg-blue-500 text-white rounded-lg px-4 py-2"
               >
                 Confirm
               </button>

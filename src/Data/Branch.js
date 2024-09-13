@@ -13,6 +13,8 @@ import {
 } from '@heroicons/react/24/solid';
 import { BRANCH_API } from '../API/apiConfig';
 
+const tokenKey = 'tokenKey';
+
 const Branch = () => {
   const [branches, setBranches] = useState([]);
   const [formData, setFormData] = useState({
@@ -25,9 +27,7 @@ const Branch = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
-  const [toggleBranch, setToggleBranch] = useState(null);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [branchToDelete, setBranchToDelete] = useState(null);
+  const [branchToToggle, setBranchToToggle] = useState(null);
 
   // Retrieve token from localStorage
   const token = localStorage.getItem('tokenKey');
@@ -63,23 +63,28 @@ const Branch = () => {
           updatedOn: new Date().toISOString(),
           isActive: formData.isActive ? 1 : 0,
         };
+        console.log('Sending branch data:', newBranch); // Debugging
+
         const response = await axios.post(`${BRANCH_API}/save`, newBranch, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
         });
+
+        console.log('Branch added:', response.data); // Debugging
         setBranches([...branches, response.data]);
-        setFormData({ name: '', address: '', isActive: true }); // Reset with default isActive true
+        setFormData({ name: '', address: '', isActive: true });
         alert('Branch added successfully!');
       } catch (error) {
-        console.error('Error adding branch:', error);
+        console.error('Error adding branch:', error.response ? error.response.data : error.message);
         alert('Failed to add the Branch. Please try again.');
       }
     } else {
       console.error('Form data is incomplete');
     }
   };
+
 
   const handleEditBranch = (index) => {
     setEditingIndex(index);
@@ -116,66 +121,50 @@ const Branch = () => {
     }
   };
 
-  const handleDeleteBranch = (index) => {
-    setBranchToDelete(branches[index]);
-    setDeleteModalVisible(true);
-  };
 
-  const handleDeleteConfirmed = async (id) => {
-    try {
-      await axios.delete(`${BRANCH_API}/delete/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const updatedBranches = branches.filter(branch => branch.id !== id);
-      setBranches(updatedBranches);
-      setDeleteModalVisible(false);
-      setBranchToDelete(null);
-      alert('Branch deleted successfully!');
-    } catch (error) {
-      console.error('Error deleting branch:', error);
-      alert('Failed to delete the Branch. Please try again.');
-    }
-  };
 
-  const handleToggleActive = (branch) => {
-    setToggleBranch(branch);
+  const handleToggleActiveStatus = (branch) => {
+    setBranchToToggle(branch);
     setModalVisible(true);
   };
 
   const confirmToggleActiveStatus = async () => {
-    if (toggleBranch) {
+    if (branchToToggle) {
       try {
         const updatedBranch = {
-          ...toggleBranch,
-          isActive: toggleBranch.isActive === 1 ? 0 : 1,
+          ...branchToToggle,
+          isActive: branchToToggle.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
           updatedOn: new Date().toISOString(),
         };
+
+        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
         const response = await axios.put(
-          `${BRANCH_API}/updateStatus/${updatedBranch.id}?isActive=${updatedBranch.isActive}`,
-          null,
+          `${BRANCH_API}/updatestatus/${updatedBranch.id}`, // Update API endpoint
+          updatedBranch,
           {
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Content-Branch': 'application/json',
+              Authorization: `Bearer ${token}`,
             },
           }
         );
+
         const updatedBranches = branches.map(branch =>
           branch.id === updatedBranch.id ? response.data : branch
         );
         setBranches(updatedBranches);
         setModalVisible(false);
-        setToggleBranch(null);
-        alert('Status changed successfully!');
+        setBranchToToggle(null);
+        alert('Status Changed successfully!');
       } catch (error) {
-        console.error('Error toggling branch status:', error);
-        alert('Failed to change the Status. Please try again.');
+        console.error('Error toggling Category status:', error.response ? error.response.data : error.message);
+        alert('Failed to changing the status. Please try again.');
       }
     } else {
-      console.error('No branch selected for status toggle');
+      console.error('No Branch selected for status toggle');
     }
   };
+ 
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -305,7 +294,7 @@ const Branch = () => {
                   </td>
                   <td className="border p-2 text-center">
                     <button
-                      onClick={() => handleToggleActive(branch)}
+                      onClick={() => handleToggleActiveStatus(branch)}
                       className={`p-1 rounded-full ${branch.isActive ? 'bg-green-500' : 'bg-red-500'}`}
                     >
                       {branch.isActive ? (
@@ -357,7 +346,7 @@ const Branch = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-lg font-semibold mb-4">Confirm Status Change</h2>
-            <p className="mb-4">Are you sure you want to {toggleBranch.isActive ? 'deactivate' : 'activate'} this branch?</p>
+            <p className="mb-4">Are you sure you want to {branchToToggle.isActive ? 'deactivate' : 'activate'} this branch<strong>{branchToToggle.name}</strong>?</p>
             <div className="flex justify-end gap-4">
               <button onClick={() => setModalVisible(false)} className="bg-gray-300 p-2 rounded-lg">Cancel</button>
               <button onClick={confirmToggleActiveStatus} className="bg-blue-500 text-white p-2 rounded-lg">Confirm</button>
@@ -365,20 +354,6 @@ const Branch = () => {
           </div>
         </div>
       )}
-
-      {/* Delete Confirmation Modal
-      {deleteModalVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">Confirm Deletion</h2>
-            <p className="mb-4">Are you sure you want to delete this branch?</p>
-            <div className="flex justify-end gap-4">
-              <button onClick={() => setDeleteModalVisible(false)} className="bg-gray-300 p-2 rounded-lg">Cancel</button>
-              <button onClick={() => handleDeleteConfirmed(branchToDelete.id)} className="bg-red-500 text-white p-2 rounded-lg">Confirm</button>
-            </div>
-          </div>
-        </div>
-      )} */}
     </div>
   );
 };

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { YEAR_API, CATEGORI_API, TYPE_API, DOCUMENTHEADER_API, UPLOADFILE_API } from '../API/apiConfig';
-import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, TrashIcon, MagnifyingGlassIcon, PlusCircleIcon, CheckCircleIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ArrowRightIcon, PencilIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon, PlusCircleIcon, CheckCircleIcon, EyeIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
+const tokenKey = 'tokenKey';
 const Document = () => {
   const [documents, setDocuments] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     subject: '',
-    category: '',
-    year: '',
-    type: '',
+    category: null,
+    year: null,
+    type: null,
     file: null
   });
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,7 +19,6 @@ const Document = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
   const [categoryOptions, setCategoryOptions] = useState([]);
   const [yearOptions, setYearOptions] = useState([]);
   const [typeOptions, setTypeOptions] = useState([]);
@@ -26,75 +26,27 @@ const Document = () => {
   const [filePaths, setFilePaths] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [documentToToggle, setDocumentToToggle] = useState(null);
+  const [fieldsDisabled, setFieldsDisabled] = useState(false);
+  const [isUploadEnabled, setIsUploadEnabled] = useState(false);
+
+
 
   const token = localStorage.getItem('tokenKey'); // Retrieve token from local storage
+
+  useEffect(() => {
+    const { title, subject, category, year, type } = formData;
+    const isFormFilled = title && subject && category && year && type && selectedFiles.length > 0;
+    setIsUploadEnabled(isFormFilled);
+  }, [formData, selectedFiles]);
 
   useEffect(() => {
     fetchOptions();
     fetchDocuments();
   }, []);
 
-  const handleFileChange = (event) => {
-    const files = Array.from(event.target.files);
-    const validFiles = files.filter(file => file.type === 'application/pdf');
-    if (validFiles.length !== files.length) {
-      alert('Only PDF files are allowed.');
-    }
-    setSelectedFiles(validFiles);
-    setFilePaths(validFiles.map(file => file.name)); // Track file names
-  };
-
-  const handleUpload = async () => {
-    if (selectedFiles.length === 0) {
-      alert('Please select files.');
-      return;
-    }
-
-    const formData = new FormData();
-    Array.from(selectedFiles).forEach(file => {
-      formData.append('images', file); // Change 'images' to 'files' if needed
-    });
-
-    try {
-      const response = await fetch(`${UPLOADFILE_API}/File`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${token}` // Ensure the token is valid
-        }
-      });
-
-      if (response.ok) {
-        const result = await response.text();
-        alert(`Files uploaded successfully: ${result}`);
-        setUploadedFileNames([...uploadedFileNames, ...Array.from(selectedFiles).map(file => file.name)]);
-        setSelectedFiles([]);
-      } else {
-        const errorText = await response.text();
-        alert(`Failed to upload files: ${errorText}`);
-        console.error(`Failed to upload files: ${errorText}`);
-      }
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      alert('Error uploading files');
-    }
-};
-
-
-  const handleDiscard = (index) => {
-    const updatedFileNames = uploadedFileNames.filter((_, i) => i !== index);
-    setUploadedFileNames(updatedFileNames);
-  };
-
-  const getFileStyle = (fileName) => {
-    if (fileName.endsWith('.pdf')) {
-      return { color: '#4a5568', backgroundColor: '#e2e8f0' }; // Blue-grey for PDFs
-    } else if (fileName.endsWith('.docx')) {
-      return { color: '#2d3748', backgroundColor: '#f7fafc' }; // Darker grey for DOCX
-    }
-    return { color: '#4a5568', backgroundColor: '#f1f5f9' }; // Default style
-  };
-
+  // All Fetching Functions
   const fetchOptions = async () => {
     try {
       const [categoryRes, yearRes, typeRes] = await Promise.all([
@@ -124,7 +76,7 @@ const Document = () => {
 
   const fetchDocuments = async () => {
     try {
-      const response = await axios.get(`${DOCUMENTHEADER_API}/findAll`, {
+      const response = await axios.get(`${DOCUMENTHEADER_API}/find-all`, {
         headers: {
           'Authorization': `Bearer ${token}` // Add token to the headers
         }
@@ -135,12 +87,13 @@ const Document = () => {
     }
   };
 
+  // Input Condition Functions
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-  
+
     // Allow only letters and spaces
     const regex = /^[A-Za-z\s]*$/;
-  
+
     if (regex.test(value) || value === "") {
       setFormData((prevData) => ({
         ...prevData,
@@ -148,51 +101,240 @@ const Document = () => {
       }));
     }
   };
-  const handleAddDocument = async () => {
-    if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
-      const newDocument = {
-        title: formData.title,
-        fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-        subject: formData.subject,
-        version: '1.0',
-        createdOn: new Date().toISOString(),
-        updatedOn: '',
-        isApproved: false,
-        category: formData.category ? { id: parseInt(formData.category, 10) } : null,
-        year: formData.year ? { id: parseInt(formData.year, 10) } : null,
-        type: formData.type ? { id: parseInt(formData.type, 10) } : null,
-        employee: null,
-        department: null,
-        branch: null
-      };
 
-      try {
-        await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
-          headers: {
-            'Authorization': `Bearer ${token}`, // Add token to the headers
-            'Content-Type': 'application/json'
-          }
-        });
-        fetchDocuments(); // Refresh the document list
-        setFormData({
-          title: '',
-          subject: '',
-          category: '',
-          year: '',
-          type: '',
-          file: null
-        });
-        setCurrentPage(1); // Optionally, reset pagination
-        alert('Document added successfully!');
-      } catch (error) {
-        console.error('Error adding document:', error.response ? error.response.data : error.message);
-        alert('Failed to adding the Document. Please try again.'); 
-      }
-    } else {
-      console.error('Form data is incomplete:', formData); // Debugging statement
+  // All Upload PDF Functions
+  const handleFileChange = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter(file => file.type === 'application/pdf');
+    if (validFiles.length !== files.length) {
+      alert('Only PDF files are allowed.');
+    }
+    setSelectedFiles(validFiles);
+    setFilePaths(validFiles.map(file => file.name)); // Track file names
+  };
+
+  const handleDiscard = () => {
+    setUploadedFileNames([]);// Re-enable the fields when all files are discarded
+  };
+
+  const handleDiscardAll = () => {
+    setUploadedFileNames([]);
+    setFieldsDisabled(false);
+  };
+
+  const handleDiscardFile = (index) => {
+    const updatedFileNames = [...uploadedFileNames];
+    updatedFileNames.splice(index, 1);
+    setUploadedFileNames(updatedFileNames);
+
+    if (updatedFileNames.length === 0) {
+      setFieldsDisabled(false); // Re-enable fields if no files are left
     }
   };
 
+  const handleUpload = async () => {
+    if (!isUploadEnabled) return;
+
+    const formDataToUpload = new FormData();
+    Array.from(selectedFiles).forEach(file => {
+      formDataToUpload.append('images', file);
+    });
+
+    try {
+      const response = await fetch(`${UPLOADFILE_API}/File`, {
+        method: 'POST',
+        body: formDataToUpload,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.text();
+        alert(`Files uploaded successfully: ${result}`);
+        setUploadedFileNames([...uploadedFileNames, ...Array.from(selectedFiles).map(file => file.name)]);
+        setSelectedFiles([]);
+        setFieldsDisabled(true);
+      } else {
+        const errorText = await response.text();
+        alert(`Failed to upload files: ${errorText}`);
+        console.error(`Failed to upload files: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      alert('Error uploading files');
+    }
+  };
+
+
+  const getFileStyle = (fileName) => {
+    if (fileName.endsWith('.pdf')) {
+      return { color: '#4a5568', backgroundColor: '#e2e8f0' }; // Blue-grey for PDFs
+    } else if (fileName.endsWith('.docx')) {
+      return { color: '#2d3748', backgroundColor: '#f7fafc' }; // Darker grey for DOCX
+    }
+    return { color: '#4a5568', backgroundColor: '#f1f5f9' }; // Default style
+  };
+
+  const handleViewClick = (file) => {
+    const fileUrl = URL.createObjectURL(file);
+    window.open(fileUrl, '_blank');
+  };
+
+
+  const handleSelectChange = (e, type) => {
+    const selectedValue = e.target.value;
+    let selected;
+
+    switch (type) {
+      case 'category':
+        selected = categoryOptions.find(category => category.id === parseInt(selectedValue));
+        setFormData({ ...formData, category: selected });
+        break;
+      case 'year':
+        selected = yearOptions.find(year => year.id === parseInt(selectedValue));
+        setFormData({ ...formData, year: selected });
+        break;
+      case 'type':
+        selected = typeOptions.find(type => type.id === parseInt(selectedValue));
+        setFormData({ ...formData, type: selected });
+        break;
+      default:
+        break;
+    }
+  };
+
+  // All Document Oprations Functions
+  //ADD
+  // const handleAddDocument = async () => {
+  //   if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
+  //     const newDocument = {
+  //       title: formData.title,
+  //       fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+  //       subject: formData.subject,
+  //       version: '1.0',
+  //       createdOn: new Date().toISOString(),
+  //       updatedOn: '',
+  //       isApproved: false,
+  //       category: formData.category ? { id: parseInt(formData.category, 10) } : null,
+  //       year: formData.year ? { id: parseInt(formData.year, 10) } : null,
+  //       type: formData.type ? { id: parseInt(formData.type, 10) } : null,
+  //       employee: null,
+  //       department: null,
+  //       branch: null
+  //     };
+
+  //     try {
+  //       await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
+  //         headers: {
+  //           'Authorization': `Bearer ${token}`, // Add token to the headers
+  //           'Content-Type': 'application/json'
+  //         }
+  //       });
+  //       fetchDocuments(); // Refresh the document list
+  //       setFormData({
+  //         title: '',
+  //         subject: '',
+  //         category: '',
+  //         year: '',
+  //         type: '',
+  //         file: null
+  //       });
+  //       setCurrentPage(1); // Optionally, reset pagination
+  //       alert('Document added successfully!');
+  //     } catch (error) {
+  //       console.error('Error adding document:', error.response ? error.response.data : error.message);
+  //       alert('Failed to adding the Document. Please try again.');
+  //     }
+  //   } else {
+  //     console.error('Form data is incomplete:', formData); // Debugging statement
+  //   }
+  // };
+
+  const handleAddDocument = async () => {
+    if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
+      try {
+        const newDocument = {
+          title: formData.title,
+          fileNo: `DOC${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+          subject: formData.subject,
+          version: '1.0',
+          category: formData.category,
+          year: formData.year,
+          type: formData.type,
+          createdOn: new Date().toISOString(),
+          updatedOn: new Date().toISOString(),
+          isActive: formData.isActive ? 1 : 0,
+          isApproved: false,
+          employee: null,
+          department: null,
+          branch: null
+        };
+        const response = await axios.post(`${DOCUMENTHEADER_API}/save`, newDocument, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        setDocuments([...documents, response.data]);
+        setFormData({ title: '', subject: '', type: null, year: null, category: null, file: null, isApproved: false, isActive: true });
+        alert('Document added successfully!');
+      } catch (error) {
+        console.error('Error adding Document:', error);
+        alert('Failed to adding the Document. Please try again.');
+      }
+    } else {
+      alert('Form data is incomplete');
+    }
+  };
+
+  //UPDATE
+  // const handleEditDocument = (index) => {
+  //   setEditingIndex(index);
+  //   const doc = documents[index];
+  //   setFormData({
+  //     title: doc.title || '',
+  //     subject: doc.subject || '',
+  //     category: doc.category ? doc.category.id : '',
+  //     year: doc.year ? doc.year.id : '',
+  //     type: doc.type ? doc.type.id : '',
+  //     file: null
+  //   });
+  // };
+  const handleEditDocument = (index) => {
+    setEditingIndex(index);
+    setFormData(documents[index]);
+  };
+  
+  // const handleSaveEdit = async () => {
+  //   if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
+  //     try {
+  //       const updatedDepartment = {
+  //         ...formData,
+  //         updatedOn: new Date().toISOString(),
+  //         isActive: formData.isActive ? 1 : 0,
+  //       };
+  //       const response = await axios.put(`${DEPAETMENT_API}/update/${formData.id}`, updatedDepartment, {
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'Authorization': `Bearer ${token}`,
+  //         },
+  //       });
+  //       const updatedDepartments = departments.map((department, index) =>
+  //         index === editingIndex ? response.data : department
+  //       );
+  //       setDepartments(updatedDepartments);
+  //       setFormData({ name: '', branch: null, isActive: true });
+  //       setEditingIndex(null);
+  //       alert('Department updated successfully!');
+  //     } catch (error) {
+  //       console.error('Error updating department:', error);
+  //       alert('Failed to updating the Department. Please try again.');
+  //     }
+  //   } else {
+  //     console.error('Form data is incomplete');
+  //   }
+  // };
   const handleSaveEdit = async () => {
     if (formData.title && formData.subject && formData.category && formData.year && formData.type) {
       const updatedDocument = {
@@ -226,63 +368,93 @@ const Document = () => {
         alert('Document updated successfully!');
       } catch (error) {
         console.error('Error saving document:', error);
-        alert('Failed to updating the Document. Please try again.'); 
+        alert('Failed to updating the Document. Please try again.');
       }
     } else {
       console.error('Form data is incomplete:', formData);
     }
   };
 
-  const handleEditDocument = (index) => {
-    setEditingIndex(index);
-    const doc = documents[index];
-    setFormData({
-      title: doc.title || '',
-      subject: doc.subject || '',
-      category: doc.category ? doc.category.id : '',
-      year: doc.year ? doc.year.id : '',
-      type: doc.type ? doc.type.id : '',
-      file: null
-    });
+  //SOFT DELETE
+  const handleToggleActiveStatus = (document) => {
+    setDocumentToToggle(document);
+    setModalVisible(true);
   };
 
-  const handleDeleteDocument = async (id) => {
-    try {
-      await axios.delete(`${DOCUMENTHEADER_API}/delete/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}` // Add token to the headers
-        }
-      });
-      fetchDocuments(); // Refresh the document list
-      alert('Document delated successfully!');
-    } catch (error) {
-      console.error('Error deleting document:', error);
+  const confirmToggleActiveStatus = async () => {
+    if (documentToToggle) {
+      try {
+        const updatedDocument = {
+          ...documentToToggle,
+          isActive: documentToToggle.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
+          updatedOn: new Date().toISOString(),
+        };
+
+        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
+        const response = await axios.put(
+          `${DOCUMENTHEADER_API}/update/status/active/${updatedDocument.id}`, // Update API endpoint
+          updatedDocument,
+          {
+            headers: {
+              'Content-Document': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const updatedDocuments = documents.map(document =>
+          document.id === updatedDocument.id ? response.data : document
+        );
+        setDocuments(updatedDocuments);
+        setModalVisible(false);
+        setDocumentToToggle(null);
+        alert('Status Changed successfully!');
+      } catch (error) {
+        console.error('Error toggling Document status:', error.response ? error.response.data : error.message);
+        alert('Failed to changing the status. Please try again.');
+      }
+    } else {
+      console.error('No Document selected for status toggle');
     }
   };
 
-  const handleViewClick = (file) => {
-    const fileUrl = URL.createObjectURL(file);
-    window.open(fileUrl, '_blank');
+  // DATE FOMATE
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      // hour12: true 
+    };
+    return date.toLocaleString('en-GB', options).replace(',', '');
   };
 
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
+  // All FIlTERS
+  const filteredDocuments = documents.filter(document => {
+    const statusText = document.isActive === 1 ? 'active' : 'inactive';
+    const createdOnText = formatDate(document.createdOn);
+    const updatedOnText = formatDate(document.updatedOn);
 
-  const handleItemsPerPageChange = (e) => {
-    setItemsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Reset to the first page when items per page change
-  };
+    const search = searchTerm.toLowerCase();
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    return (
+      (typeof document.title === 'string' && document.title.toLowerCase().includes(search)) ||
+      (typeof document.type === 'string' && document.type.toLowerCase().includes(search)) ||
+      (typeof document.category === 'string' && document.category.toLowerCase().includes(search)) ||
+      (typeof document.subject === 'string' && document.subject.toLowerCase().includes(search)) ||
+      statusText.includes(search) ||
+      createdOnText.includes(search) ||
+      updatedOnText.includes(search)
+    );
+  });
+  const sortedDocuments = filteredDocuments.sort((a, b) => b.isActive - a.isActive);
 
-  const totalItems = filteredDocuments.length;
+  const totalItems = sortedDocuments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-
+  const paginatedDocuments = sortedDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="p-1">
@@ -296,6 +468,7 @@ const Document = () => {
               name="title"
               value={formData.title}
               onChange={handleInputChange}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             />
             <input
@@ -304,41 +477,54 @@ const Document = () => {
               name="subject"
               value={formData.subject}
               onChange={handleInputChange}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             />
             <select
               name="category"
-              value={formData.category}
-              onChange={handleInputChange}
+              value={formData.category?.id || ""}
+              onChange={(e) => handleSelectChange(e, 'category')}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Category</option>
               {categoryOptions.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
               ))}
             </select>
+
             <select
               name="year"
-              value={formData.year}
-              onChange={handleInputChange}
+              value={formData.year?.id || ""}
+              onChange={(e) => handleSelectChange(e, 'year')}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Year</option>
               {yearOptions.map((year) => (
-                <option key={year.id} value={year.id}>{year.name}</option>
+                <option key={year.id} value={year.id}>
+                  {year.name}
+                </option>
               ))}
             </select>
+
             <select
               name="type"
-              value={formData.type}
-              onChange={handleInputChange}
+              value={formData.type?.id || ""}
+              onChange={(e) => handleSelectChange(e, 'type')}
+              disabled={fieldsDisabled}
               className="p-2 border rounded-md outline-none"
             >
               <option value="">Select Type</option>
               {typeOptions.map((type) => (
-                <option key={type.id} value={type.id}>{type.name}</option>
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
               ))}
             </select>
+
             <div>
               <div className='flex'>
 
@@ -349,8 +535,11 @@ const Document = () => {
                   onChange={handleFileChange}
                   className="p-2 border rounded-md outline-none w-full"
                 />
-                <button onClick={handleUpload}
-                  className="bg-rose-900 ml-2 text-white rounded-xl p-2">
+                <button
+                  onClick={handleUpload}
+                  disabled={!isUploadEnabled}
+                  className={`ml-2 text-white rounded-xl p-2 ${isUploadEnabled ? 'bg-rose-900' : 'bg-gray-400'}`}
+                >
                   Upload
                 </button>
 
@@ -364,7 +553,7 @@ const Document = () => {
               </button>
             ) : (
               <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
-                <CheckCircleIcon className="h-5 w-5 mr-1" /> Save Changes
+                <CheckCircleIcon className="h-5 w-5 mr-1" /> Update
               </button>
             )}
           </div>
@@ -372,8 +561,8 @@ const Document = () => {
 
         <>
           {uploadedFileNames.length > 0 && (
-            <div style={{ padding: '1rem', backgroundColor: '#f1f5f9', borderRadius: '0.5rem' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div className="p-4 bg-slate-100 rounded-lg">
+              <div className="flex flex-wrap gap-4">
                 {uploadedFileNames.map((fileName, index) => (
                   <div
                     key={index}
@@ -387,16 +576,22 @@ const Document = () => {
                       ...getFileStyle(fileName), // Apply the style based on filename
                     }}
                   >
-                    <span style={{ marginRight: '0.5rem' }}>{fileName}</span>
+                    <span className="mr-4">{fileName}</span>
                     <button
                       style={{ color: '#ef4444', cursor: 'pointer', background: 'none', border: 'none' }}
-                      onClick={() => handleDiscard(index)}
+                      onClick={() => handleDiscardFile(index)}
                     >
                       <XMarkIcon style={{ width: '1.25rem', height: '1.25rem' }} />
                     </button>
                   </div>
                 ))}
               </div>
+              <button
+                className="mt-4 text-red-500"
+                onClick={handleDiscardAll}
+              >
+                Discard All
+              </button>
             </div>
           )}
         </>
@@ -436,17 +631,18 @@ const Document = () => {
                 <th className="border p-2 text-left">File No</th>
                 <th className="border p-2 text-left">Subject</th>
                 <th className="border p-2 text-left">Version</th>
-                <th className="border p-2 text-left">Created On</th>
+                {/* <th className="border p-2 text-left">Created On</th> */}
                 <th className="border p-2 text-left">Updated On</th>
                 <th className="border p-2 text-left">Category</th>
                 <th className="border p-2 text-left">Year</th>
-                <th className="border p-2 text-left">Type</th>
-                <th className="border p-2 text-left">EID</th>
-                <th className="border p-2 text-left">Department</th>
-                <th className="border p-2 text-left">Branch</th>
+                {/* <th className="border p-2 text-left">Type</th> */}
+                {/* <th className="border p-2 text-left">EID</th> */}
+                {/* <th className="border p-2 text-left">Department</th> */}
+                {/* <th className="border p-2 text-left">Branch</th> */}
+                <th className="border p-2 text-left">Status</th>
                 <th className="border p-2 text-left">Approval</th>
                 <th className="border p-2 text-left">Edit</th>
-                <th className="border p-2 text-left">Delete</th>
+                <th className="border p-2 text-left">Access</th>
                 <th className="border p-2 text-left">View</th>
               </tr>
             </thead>
@@ -458,14 +654,15 @@ const Document = () => {
                   <td className="border p-2">{doc.fileNo}</td>
                   <td className="border p-2">{doc.subject}</td>
                   <td className="border p-2">{doc.version}</td>
-                  <td className="border p-2">{new Date(doc.createdOn).toLocaleDateString()}</td>
-                  <td className="border p-2">{new Date(doc.updatedOn).toLocaleDateString()}</td>
+                  {/* <td className="border px-4 py-2">{formatDate(doc.createdOn)}</td> */}
+                  <td className="border px-4 py-2">{formatDate(doc.updatedOn)}</td>
                   <td className="border p-2">{doc.category ? doc.category.name : ''}</td>
                   <td className="border p-2">{doc.year ? doc.year.name : ''}</td>
-                  <td className="border p-2">{doc.type ? doc.type.name : ''}</td>
-                  <td className="border p-2">{doc.employee ? doc.employee.id : 'N/A'}</td>
-                  <td className="border p-2">{doc.department ? doc.department.name : ''}</td>
-                  <td className="border p-2">{doc.branch ? doc.branch.name : ''}</td>
+                  {/* <td className="border p-2">{doc.type ? doc.type.name : ''}</td> */}
+                  {/* <td className="border p-2">{doc.employee ? doc.employee.id : 'N/A'}</td> */}
+                  {/* <td className="border p-2">{doc.department ? doc.department.name : ''}</td> */}
+                  {/* <td className="border p-2">{doc.branch ? doc.branch.name : ''}</td> */}
+                  <td className="border p-2">{doc.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">{doc.approved ? 'Approved' : 'Not Approved'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditDocument(documents.findIndex(d => d.id === doc.id))}>
@@ -473,8 +670,15 @@ const Document = () => {
                     </button>
                   </td>
                   <td className="border p-2">
-                    <button onClick={() => handleDeleteDocument(doc.id)}>
-                      <TrashIcon className="h-6 w-6 text-white bg-red-500 rounded-xl p-1 ml-2" />
+                    <button
+                      onClick={() => handleToggleActiveStatus(doc)}
+                      className={`p-1 rounded-full ${doc.isActive === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                    >
+                      {doc.isActive === 1 ? (
+                        <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
+                      ) : (
+                        <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
+                      )}
                     </button>
                   </td>
                   <td className="border p-2">
@@ -563,6 +767,29 @@ const Document = () => {
           </div>
         )}
       </div>
+      {modalVisible && (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Confirm Status Change</h2>
+            <p>Are you sure you want to {documentToToggle?.isActive === 1 ? 'deactivate' : 'activate'} the Document <strong>{documentToToggle.title}</strong>?</p>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setModalVisible(false)}
+                className="bg-gray-300 text-gray-800 rounded-lg px-4 py-2 mr-2"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmToggleActiveStatus}
+                className="bg-blue-500 text-white rounded-lg px-4 py-2"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
 
   );
