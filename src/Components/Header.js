@@ -7,7 +7,6 @@ function Header({ toggleSidebar, userName }) {
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
-  const email = localStorage.getItem('email');
   const UserName = localStorage.getItem('UserName')
 
   const handleLogout = () => {
@@ -51,7 +50,7 @@ function Header({ toggleSidebar, userName }) {
           <Bars3Icon className="h-7 w-7" />
         </button>
         <h2 className="font-bold text-2xl">
-          DMS <span className="text-3xl font-semibold">|</span>{' '}
+          DMS <span className="text-3xl font-semibold">|</span>{'UserName'}
           <span className="font-light">Document Management System</span>
         </h2>
       </div>

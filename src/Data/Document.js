@@ -44,7 +44,7 @@ const Document = () => {
   useEffect(() => {
     fetchOptions();
     fetchDocuments();
-  }, []);
+  },);
 
   // All Fetching Functions
   const fetchOptions = async () => {

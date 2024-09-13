@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowLeftIcon, ArrowRightIcon, MagnifyingGlassIcon, CheckCircleIcon, XMarkIcon, EyeIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, ArrowRightIcon, MagnifyingGlassIcon, CheckCircleIcon, EyeIcon } from '@heroicons/react/24/solid';
 import { DOCUMENTHEADER_API } from '../API/apiConfig';
 
 const Approve = () => {
@@ -55,18 +55,6 @@ const Approve = () => {
   const totalItems = filteredDocuments.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const paginatedDocuments = filteredDocuments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
 
   return (
     <div className="p-4">

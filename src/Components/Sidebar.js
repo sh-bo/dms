@@ -11,7 +11,6 @@ import {
   DocumentTextIcon,
   KeyIcon,
   ComputerDesktopIcon,
-  DocumentChartBarIcon,
   LockClosedIcon,
   UserCircleIcon,
   CalendarDaysIcon,
