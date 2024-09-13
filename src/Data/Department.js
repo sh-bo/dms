@@ -9,7 +9,6 @@ import {
   MagnifyingGlassIcon,
   PencilIcon,
   PlusCircleIcon,
-  TrashIcon
 } from '@heroicons/react/24/solid';
 import { DEPAETMENT_API, BRANCH_API } from '../API/apiConfig';
 
@@ -34,7 +33,7 @@ const Department = () => {
   useEffect(() => {
     fetchBranches();
     fetchDepartments();
-  }, []);
+  },);
 
   const fetchBranches = async () => {
     try {

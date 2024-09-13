@@ -1,5 +1,5 @@
 import { TYPE_API } from '../API/apiConfig';
-import { ArrowLeftIcon, LockClosedIcon, LockOpenIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { ArrowLeftIcon, LockClosedIcon, LockOpenIcon, ArrowRightIcon, CheckCircleIcon, PencilIcon, PlusCircleIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 

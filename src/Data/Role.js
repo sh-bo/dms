@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon,
   LockClosedIcon, LockOpenIcon, MagnifyingGlassIcon,
-  PencilIcon, PlusCircleIcon, TrashIcon
+  PencilIcon, PlusCircleIcon
 } from '@heroicons/react/24/solid';
 import axios from 'axios';
 

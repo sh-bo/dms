@@ -1,19 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import Sidebar from '../Components/Sidebar';
-import Header from '../Components/Header';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   Legend,
   ResponsiveContainer,
-  LineChart,
-  Line,
-} from 'recharts';
+} from "recharts";
+import { useNavigate } from "react-router-dom"; // For redirecting if unauthorized
+import Sidebar from "../Components/Sidebar";
+import Header from "../Components/Header";
 import {
   CalendarDaysIcon,
   ComputerDesktopIcon,
@@ -25,10 +26,12 @@ import {
   ShoppingCartIcon,
   UserCircleIcon,
   UsersIcon,
-} from '@heroicons/react/24/solid';
+} from "@heroicons/react/24/solid";
 
 function Dashboard() {
+  const [chartData, setChartData] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const currentYear = new Date().getFullYear();
   const [stats, setStats] = useState({
     totalUser: 0,
     totalDocument: 0,
@@ -40,47 +43,88 @@ function Dashboard() {
     documentType: 0,
     annualYear: 0,
     totalCategories: 0,
+    totalApprovedDocuments: 0,
+    totalRejectedDocuments: 0,
+    totalPendingDocuments: 0,
+    totalApprovedDocumentsById: 0,
+    totalRejectedDocumentsById: 0,
+    totalPendingDocumentsById: 0,
+    totalDocumentsById: 0,
   });
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        // Retrieve token from local storage
-        const token = localStorage.getItem('tokenKey'); // Make sure 'tokenKey' matches the key used in Sidebar
-        if (token) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        } else {
-          console.error('Token not found in localStorage');
-        }
+  const navigate = useNavigate();
 
-        const response = await axios.get('http://localhost:8080/Dashboard/GetAllCountsForDashBoard');
-        setStats(response.data);
+  useEffect(() => {
+    const fetchStatsAndData = async () => {
+      try {
+        const employeeId = localStorage.getItem("userId");
+        const token = localStorage.getItem("tokenKey");
+        const role = localStorage.getItem("role"); // Fixed the typo
+    
+        if (!token || !employeeId) {
+          throw new Error("Unauthorized: Token or Employee ID missing.");
+        }
+    
+        // Set Authorization header for requests
+        const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+    
+        // Fetch dashboard stats
+        const statsResponse = await axios.get(
+          "http://localhost:8080/Dashboard/GetAllCountsForDashBoard",
+          {
+            ...authHeader,
+            params: { employeeId },
+          }
+        );
+        setStats(statsResponse.data);
+    
+        // Fetch documents summary
+        const startDate = `${currentYear}-01-01 00:00:00`;
+        const endDate = `${currentYear}-12-31 23:59:59`;
+    
+        let summaryUrl = '';
+    
+        if (role === "ADMIN") {
+          summaryUrl = `http://localhost:8080/api/documents/document/summary/by/${employeeId}`;
+        } else {
+          summaryUrl = `http://localhost:8080/api/documents/documents-summary/${employeeId}`;
+        }
+    
+        const summaryResponse = await axios.get(summaryUrl, {
+          ...authHeader,
+          params: { startDate, endDate },
+        });
+    
+        const { months, approvedDocuments, rejectedDocuments } = summaryResponse.data;
+        const mappedData = months.map((month, index) => ({
+          name: month,
+          ApprovedDocuments: approvedDocuments[index],
+          RejectedDocuments: rejectedDocuments[index],
+        }));
+    
+        setChartData(mappedData);
+    
       } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        console.error("Error fetching data:", error);
+    
+        // Redirect to login if unauthorized
+        if (
+          error.response?.status === 401 ||
+          error.message === "Unauthorized: Token or Employee ID missing."
+        ) {
+          navigate("/login");
+        }
       }
     };
-    fetchStats();
-  }, []);
+    
+    fetchStatsAndData();
+  }, [navigate, currentYear]);
+  
+  
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
-
-  const barChartData = [
-    { name: 'Jan', uv: 4000, pv: 2400, amt: 2400 },
-    { name: 'Feb', uv: 3000, pv: 1398, amt: 2210 },
-    { name: 'Mar', uv: 2000, pv: 9800, amt: 2290 },
-    { name: 'Apr', uv: 2780, pv: 3908, amt: 2000 },
-    { name: 'May', uv: 1890, pv: 4800, amt: 2181 },
-  ];
-
-  const lineChartData = [
-    { name: 'Page A', uv: 4000, pv: 2400, amt: 2400 },
-    { name: 'Page B', uv: 3000, pv: 1398, amt: 2210 },
-    { name: 'Page C', uv: 2000, pv: 9800, amt: 2290 },
-    { name: 'Page D', uv: 2780, pv: 3908, amt: 2000 },
-    { name: 'Page E', uv: 1890, pv: 4800, amt: 2181 },
-  ];
 
   function StatBlock({ title, value, Icon }) {
     return (
@@ -94,6 +138,8 @@ function Dashboard() {
     );
   }
 
+  const role = localStorage.getItem("role");
+
   return (
     <div className="flex flex-row bg-neutral-100 h-screen w-screen overflow-hidden">
       {sidebarOpen && <Sidebar />}
@@ -102,46 +148,159 @@ function Dashboard() {
         <div className="flex-1 p-4 min-h-0 overflow-auto">
           <h2 className="text-xl mb-4 font-semibold">DASHBOARD</h2>
 
-          <div className="grid grid-cols-5 gap-4 mb-6">
-            <StatBlock title="Total Users" value={stats.totalUser} Icon={UsersIcon} />
-            <StatBlock title="Total Documents" value={stats.totalDocument} Icon={DocumentArrowDownIcon} />
-            <StatBlock title="Pending Documents" value={stats.pendingDocument} Icon={DocumentMagnifyingGlassIcon} />
-            <StatBlock title="Storage Used" value={`150 GB`} Icon={ServerStackIcon} />
-            <StatBlock title="Total Branches" value={stats.totalBranches} Icon={KeyIcon} />
-            <StatBlock title="Total Departments" value={stats.totalDepartment} Icon={ComputerDesktopIcon} />
-            <StatBlock title="Total Roles" value={stats.totalRoles} Icon={UserCircleIcon} />
-            <StatBlock title="Document Types" value={stats.documentType} Icon={DocumentChartBarIcon} />
-            <StatBlock title="Annual Years" value={stats.annualYear} Icon={CalendarDaysIcon} />
-            <StatBlock title="Total Categories" value={stats.totalCategories} Icon={ShoppingCartIcon} />
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <StatBlock
+              title="Total Users"
+              value={stats.totalUser}
+              Icon={UsersIcon}
+            />
+            <StatBlock
+              title="Storage Used"
+              value={`150 GB`}
+              Icon={ServerStackIcon}
+            />
+            <StatBlock
+              title="Annual Years"
+              value={stats.annualYear}
+              Icon={CalendarDaysIcon}
+            />
+
+            {role === "USER" && (
+              <>
+                <StatBlock
+                  title="Total Documents"
+                  value={stats.totalDocumentsById}
+                  Icon={DocumentArrowDownIcon}
+                />
+
+                <StatBlock
+                  title="Pending Documents"
+                  value={stats.totalPendingDocumentsById}
+                  Icon={DocumentMagnifyingGlassIcon}
+                />
+
+                <StatBlock
+                  title="Rejected Documents"
+                  value={stats.totalRejectedDocumentsById}
+                  Icon={DocumentMagnifyingGlassIcon}
+                />
+
+                <StatBlock
+                  title="Approved Documents"
+                  value={stats.totalApprovedDocumentsById}
+                  Icon={DocumentMagnifyingGlassIcon}
+                />
+              </>
+            )}
+
+            {role === "ADMIN" && (
+              <>
+                <StatBlock
+                  title="Total Documents"
+                  value={stats.totalDocument}
+                  Icon={DocumentArrowDownIcon}
+                />
+
+                <StatBlock
+                  title="Pending Documents"
+                  value={stats.totalPendingDocuments}
+                  Icon={DocumentMagnifyingGlassIcon}
+                />
+                <StatBlock
+                  title="Total Branches"
+                  value={stats.totalBranches}
+                  Icon={KeyIcon}
+                />
+                <StatBlock
+                  title="Total Departments"
+                  value={stats.totalDepartment}
+                  Icon={ComputerDesktopIcon}
+                />
+                <StatBlock
+                  title="Total Roles"
+                  value={stats.totalRoles}
+                  Icon={UserCircleIcon}
+                />
+                <StatBlock
+                  title="Document Types"
+                  value={stats.documentType}
+                  Icon={DocumentChartBarIcon}
+                />
+
+                <StatBlock
+                  title="Total Categories"
+                  value={stats.totalCategories}
+                  Icon={ShoppingCartIcon}
+                />
+
+                <StatBlock
+                  title="Rejected Documents"
+                  value={stats.totalRejectedStatusDocById}
+                  Icon={DocumentMagnifyingGlassIcon}
+                />
+
+                <StatBlock
+                  title="Approved Documents"
+                  value={stats.totalApprovedStatusDocById}
+                  Icon={DocumentMagnifyingGlassIcon}
+                />
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            {/* Bar Chart */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Monthly Data</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Monthly Document Stats {currentYear}
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={barChartData}>
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="pv" fill="#8884d8" />
-                  <Bar dataKey="uv" fill="#82ca9d" />
+                  {/* RejectedDocuments bar with red color */}
+                  <Bar
+                    dataKey="RejectedDocuments"
+                    fill="#FF0000"
+                    name="Rejected Documents"
+                  />
+                  <Bar
+                    dataKey="ApprovedDocuments"
+                    fill="#82ca9d"
+                    name="Approved Documents"
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
+            {/* Line Chart */}
             <div className="bg-white p-4 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-2">Page Views</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Page Document Stats {currentYear}
+              </h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={lineChartData}>
+                <LineChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="pv" stroke="#8884d8" />
-                  <Line type="monotone" dataKey="uv" stroke="#82ca9d" />
+                  {/* RejectedDocuments line with red color */}
+                  <Line
+                    type="monotone"
+                    dataKey="RejectedDocuments"
+                    stroke="#FF0000"
+                    name="Rejected Documents"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="ApprovedDocuments"
+                    stroke="#82ca9d"
+                    name="Approved Documents"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>

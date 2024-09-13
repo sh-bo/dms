@@ -8,8 +8,7 @@ import {
   LockOpenIcon,
   MagnifyingGlassIcon,
   PencilIcon,
-  PlusCircleIcon,
-  TrashIcon
+  PlusCircleIcon
 } from '@heroicons/react/24/solid';
 import { BRANCH_API } from '../API/apiConfig';
 
@@ -34,7 +33,7 @@ const Branch = () => {
 
   useEffect(() => {
     fetchBranches();
-  }, []);
+  },);
 
   const fetchBranches = async () => {
     try {
