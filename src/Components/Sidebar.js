@@ -109,6 +109,8 @@ function Sidebar() {
     </Link>
   );
 
+  const employeeType = localStorage.getItem('employeeType'); // Retrieve employeeType from local storage
+
   return (
     <div className="h-screen flex flex-col justify-between bg-rose-900 text-white w-52 p-1 transition-all duration-300">
       <div>
@@ -117,59 +119,67 @@ function Sidebar() {
         </div>
         <nav className="flex flex-col space-y-1">
           <hr className='border-t border-pink-800' />
-          <SidebarLink to="/" icon={InboxIcon} text="Dashboard" />
-          <hr className='border-t border-pink-800' />
-          <SidebarLink to="/users" icon={UserGroupIcon} text="Users" count={counts.totalUser} />
-          <hr className='border-t border-pink-800' />
-          <div>
-            <button
-              onClick={handleCreateToggle}
-              className="w-full px-3 py-1 rounded-lg text-xs flex items-center justify-between text-white hover:bg-pink-950 hover:text-white"
-            >
-              <div className="flex items-center">
-                <BuildingOfficeIcon className="h-5 w-5 mr-3" />
-                Organisation
+          
+          {employeeType === 'USER' && (
+            <>
+              <SidebarLink to="/" icon={InboxIcon} text="Dashboard" />
+              <SidebarLink to="/all-documents" icon={DocumentTextIcon} text="All Documents" count={counts.totalDocument} />
+              <SidebarLink to="/users" icon={UserGroupIcon} text="Users" count={counts.totalUser} />
+            </>
+          )}
+
+          {employeeType === 'ADMIN' && (
+            <>
+              <SidebarLink to="/" icon={InboxIcon} text="Dashboard" />
+              <div>
+                <button
+                  onClick={handleCreateToggle}
+                  className="w-full px-3 py-1 rounded-lg text-xs flex items-center justify-between text-white hover:bg-pink-950 hover:text-white"
+                >
+                  <div className="flex items-center">
+                    <BuildingOfficeIcon className="h-5 w-5 mr-3" />
+                    Organisation
+                  </div>
+                  {isCreateOpen ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
+                </button>
+                {isCreateOpen && (
+                  <div className="ml-2 flex flex-col space-y-1">
+                    <hr className='border-t border-pink-800 mt-1' />
+                    <SidebarLink to="/create-branch" icon={KeyIcon} text="Branch" count={counts.totalBranches} />
+                    <hr className='border-t border-pink-800' />
+                    <SidebarLink to="/create-department" icon={ComputerDesktopIcon} text="Department" count={counts.totalDepartment} />
+                    <hr className='border-t border-pink-800' />
+                    <SidebarLink to="/create-role" icon={UserCircleIcon} text="Role" count={counts.totalRoles} />
+                    <hr className='border-t border-pink-800' />
+                    <SidebarLink to="/create-type" icon={ClipboardDocumentListIcon} text="Type" count={counts.documentType} />
+                    <hr className='border-t border-pink-800' />
+                    <SidebarLink to="/create-year" icon={CalendarDaysIcon} text="Year" count={counts.annualYear} />
+                    <hr className='border-t border-pink-800' />
+                    <SidebarLink to="/create-category" icon={ShoppingCartIcon} text="Category" count={counts.totalCategories} />
+                  </div>
+                )}
               </div>
-              {isCreateOpen ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
-            </button>
-            {isCreateOpen && (
-              <div className="ml-2 flex flex-col space-y-1">
-                <hr className='border-t border-pink-800 mt-1' />
-                <SidebarLink to="/create-branch" icon={KeyIcon} text="Branch" count={counts.totalBranches} />
-                <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-department" icon={ComputerDesktopIcon} text="Department" count={counts.totalDepartment} />
-                <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-role" icon={UserCircleIcon} text="Role" count={counts.totalRoles} />
-                <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-type" icon={ClipboardDocumentListIcon} text="Type" count={counts.documentType} />
-                <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-year" icon={CalendarDaysIcon} text="Year" count={counts.annualYear} />
-                <hr className='border-t border-pink-800' />
-                <SidebarLink to="/create-category" icon={ShoppingCartIcon} text="Category" count={counts.totalCategories} />
+              <div>
+                <button
+                  onClick={handleDocumentToggle}
+                  className="w-full px-3 py-1 rounded-lg text-xs font-lg flex items-center justify-between text-white hover:bg-pink-950 hover:text-white"
+                >
+                  <div className="flex items-center">
+                    <DocumentTextIcon className="h-5 w-5 mr-3" />
+                    Document
+                  </div>
+                  {isDocumentOpen ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
+                </button>
+                {isDocumentOpen && (
+                  <div className="ml-2 flex flex-col space-y-1">
+                    <hr className='border-t border-pink-800 mt-1' />
+                    <SidebarLink to="/approve-documents" icon={LockClosedIcon} text="Approve Documents" count={counts.pendingDocument} />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <hr className='border-t border-pink-800' />
-          <div>
-            <button
-              onClick={handleDocumentToggle}
-              className="w-full px-3 py-1 rounded-lg text-xs font-lg flex items-center justify-between text-white hover:bg-pink-950 hover:text-white"
-            >
-              <div className="flex items-center">
-                <DocumentTextIcon className="h-5 w-5 mr-3" />
-                Document
-              </div>
-              {isDocumentOpen ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
-            </button>
-            {isDocumentOpen && (
-              <div className="ml-2 flex flex-col space-y-1">
-                <hr className='border-t border-pink-800 mt-1' />
-                <SidebarLink to="/all-documents" icon={DocumentChartBarIcon} text="All Documents" count={counts.totalDocument} />
-                <hr className='border-t border-pink-800' />
-                <SidebarLink to="/approve-documents" icon={LockClosedIcon} text="Approve Documents" count={counts.pendingDocument}/>
-              </div>
-            )}
-          </div>
+            </>
+          )}
+
           <hr className='border-t border-pink-800' />
         </nav>
       </div>

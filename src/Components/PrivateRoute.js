@@ -1,10 +1,20 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate } from "react-router-dom";
 
-const PrivateRoute = ({ children }) => {
-    const token = localStorage.getItem('tokenKey');
+const PrivateRoute = ({ children, allowedRoles }) => {
+  const employeeType = localStorage.getItem("employeeType");
 
-    return token ? children : <Navigate to="/auth" />;
+  if (!employeeType) {
+    // If no employeeType in localStorage, redirect to the login page
+    return <Navigate to="/auth" />;
+  }
+
+  // Check if the employeeType is allowed for this route
+  if (allowedRoles.includes(employeeType)) {
+    return children;
+  } else {
+    // If the user doesn't have permission, you can redirect to a "not authorized" page or dashboard
+    return <Navigate to="/" />;
+  }
 };
 
 export default PrivateRoute;

@@ -8,6 +8,7 @@ function Header({ toggleSidebar, userName }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const email = localStorage.getItem('email');
+  const UserName = localStorage.getItem('UserName')
 
   const handleLogout = () => {
     localStorage.removeItem('Token');
@@ -61,7 +62,7 @@ function Header({ toggleSidebar, userName }) {
             onClick={toggleDropdown}
           >
             <h1 className="text-3xl pb-2 mr-1 font-light">|</h1>
-            <span className="font-light text-sm mr-1">{email}</span>
+            <span className="font-light text-sm mr-1">{UserName}</span>
             <img src={adminPhoto} alt="Admin" className="h-8 w-8 rounded-full" />
           </div>
           {dropdownOpen && (
