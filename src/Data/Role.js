@@ -27,6 +27,7 @@ const Role = () => {
           headers: { Authorization: `Bearer ${token}` }
         });
         setRoles(response.data);
+        console.log(response.data);
       } catch (error) {
         console.error('Error fetching roles:', error);
       }
@@ -258,7 +259,7 @@ const Role = () => {
                   <td className="border p-2">
                     <button
                       onClick={() => handleToggleActiveStatus(role)}
-                      className={`p-1 rounded-full ${role.isActive === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                      className={`p-1 rounded-full ${role.isActive === true ? 'bg-green-500' : 'bg-red-500'}`}
                     >
                       {role.isActive === 1 ? (
                         <LockOpenIcon className="h-5 w-5 text-white p-0.5" />

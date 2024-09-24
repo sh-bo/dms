@@ -241,20 +241,20 @@ function Sidebar() {
                       text="Role"
                       count={counts.totalRoles}
                     />
-                    <hr className="border-t border-pink-800" />
+                    {/* <hr className="border-t border-pink-800" />
                     <SidebarLink
                       to="/create-type"
                       icon={ClipboardDocumentListIcon}
                       text="Type"
                       count={counts.documentType}
-                    />
-                    <hr className="border-t border-pink-800" />
+                    /> */}
+                    {/* <hr className="border-t border-pink-800" />
                     <SidebarLink
                       to="/create-year"
                       icon={CalendarDaysIcon}
                       text="Year"
                       count={counts.annualYear}
-                    />
+                    /> */}
                     <hr className="border-t border-pink-800" />
                     <SidebarLink
                       to="/create-category"
