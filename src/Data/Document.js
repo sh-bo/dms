@@ -33,7 +33,7 @@ const DocumentManagement = ({ fieldsDisabled }) => {
   useEffect(() => {
     fetchCategory();
     fetchDocuments();
-  }, []);
+  },);
 
   const handleCategoryChange = (e) => {
     const selectedCategory = categoryOptions.find(
