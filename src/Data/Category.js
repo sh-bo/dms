@@ -24,6 +24,8 @@ const Category = () => {
           },
         });
         setCategories(response.data);
+        console.log(response.data);
+
       } catch (error) {
         console.error('Error fetching categories:', error);
       }
@@ -105,7 +107,7 @@ const Category = () => {
       try {
         const updatedCategory = {
           ...categoryToToggle,
-          isActive: categoryToToggle.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
+          active: categoryToToggle.active === true ? 0 : 1, // Toggle between 1 and 0
           updatedOn: new Date().toISOString(),
         };
 
@@ -151,7 +153,7 @@ const Category = () => {
   };
 
   const filteredCategories = categories.filter(category => {
-    const statusText = category.isActive === 1 ? 'active' : 'inactive';
+    const statusText = category.active === true ? 'active' : 'inactive';
     const createdOnText = formatDate(category.createdOn);
     const updatedOnText = formatDate(category.updatedOn);
 
@@ -164,7 +166,7 @@ const Category = () => {
   });
 
 
-  const sortedCategories = filteredCategories.sort((a, b) => b.isActive - a.isActive);
+  const sortedCategories = filteredCategories.sort((a, b) => b.active - a.active);
 
   const totalItems = sortedCategories.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -244,7 +246,7 @@ const Category = () => {
                   <td className="border p-2">{category.name}</td>
                   <td className="border p-2">{formatDate(category.createdOn)}</td>
                   <td className="border p-2">{formatDate(category.updatedOn)}</td>
-                  <td className="border p-2">{category.isActive === 1 ? 'Active' : 'Inactive'}</td>
+                  <td className="border p-2">{category.active === true ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
                     <button onClick={() => handleEditCategory(index)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
@@ -253,9 +255,9 @@ const Category = () => {
                   <td className="border p-2">
                     <button
                       onClick={() => handleToggleActiveStatus(category)}
-                      className={`p-1 rounded-full ${category.isActive === 1 ? 'bg-green-500' : 'bg-red-500'}`}
+                      className={`p-1 rounded-full ${category.active === true ? 'bg-green-500' : 'bg-red-500'}`}
                     >
-                      {category.isActive === 1 ? (
+                      {category.active === true ? (
                         <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
                       ) : (
                         <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
@@ -302,7 +304,7 @@ const Category = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-semibold mb-4">Confirm Status Change</h2>
-            <p>Are you sure you want to {categoryToToggle?.isActive === 1 ? 'deactivate' : 'activate'} the category <strong>{categoryToToggle.category}</strong>?</p>
+            <p>Are you sure you want to {categoryToToggle?.active === true ? 'inactivate' : 'activate'} the category <strong>{categoryToToggle.name}</strong>?</p>
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setModalVisible(false)}
