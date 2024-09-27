@@ -18,6 +18,8 @@ const Role = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [roleToToggle, setRoleToToggle] = useState(null);
+  const [editingRoleId, setEditingRoleId] = useState(null); // Define the state for editing role ID
+
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -71,36 +73,69 @@ const Role = () => {
     }
   };
 
-  const handleEditRole = (index) => {
-    setEditingIndex(index);
-    setFormData({ role: roles[index].role });
-  };
+// Function to handle role editing
+const handleEditRole = (roleId) => {
+  // Set the actual ID of the role being edited
+  setEditingRoleId(roleId);
 
-  const handleSaveEdit = async () => {
-    if (formData.role) {
-      try {
-        const updatedRole = {
-          ...roles[editingIndex],
-          role: formData.role,
-          updatedOn: new Date().toISOString(),
-        };
-        const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
-        const response = await axios.put(`${ROLE_API}/update/${updatedRole.id}`, updatedRole, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const updatedRoles = roles.map((role, index) =>
-          index === editingIndex ? response.data : role
-        );
-        setRoles(updatedRoles);
-        setFormData({ role: '' });
-        setEditingIndex(null);
-        alert('Role Updated successfully!');
-      } catch (error) {
-        console.error('Error updating role:', error.response ? error.response.data : error.message);
-        alert('Failed to updating the role. Please try again.');
+  // Find the role in the original list by its ID to populate the form
+  const roleToEdit = roles.find(role => role.id === roleId);
+
+  // Populate the form with the role data (if found)
+  if (roleToEdit) {
+    setFormData({
+      role: roleToEdit.role,
+      // Add other form fields as needed
+    });
+  } else {
+    console.error('Role not found for ID:', roleId); // Log if the role is not found
+  }
+};
+
+// Function to handle saving the edited role
+const handleSaveEdit = async () => {
+  if (formData.role.trim() && editingRoleId !== null) {
+    try {
+      // Find the role in the original list by its ID
+      const roleIndex = roles.findIndex(role => role.id === editingRoleId);
+
+      if (roleIndex === -1) {
+        alert('Role not found!');
+        return;
       }
+
+      // Create the updated role object
+      const updatedRole = {
+        ...roles[roleIndex],
+        role: formData.role,
+        updatedOn: new Date().toISOString(),
+      };
+
+      // Send the update request to the server
+      const response = await axios.put(`${ROLE_API}/update/${updatedRole.id}`, updatedRole, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+        },
+      });
+
+      // Update the original roles list with the updated role
+      const updatedRoles = roles.map(role =>
+        role.id === updatedRole.id ? response.data : role
+      );
+
+      // Update the state with the modified roles array
+      setRoles(updatedRoles);
+      setFormData({ role: '' }); // Reset form data
+      setEditingRoleId(null); // Reset the editing state
+      alert('Role updated successfully!');
+    } catch (error) {
+      console.error('Error updating role:', error.response ? error.response.data : error.message);
+      alert('Failed to update the role. Please try again.');
     }
-  };
+  }
+};
+
+
 
   const handleToggleActiveStatus = (role) => {
     setRoleToToggle(role);
@@ -110,10 +145,11 @@ const Role = () => {
   const confirmToggleActiveStatus = async () => {
     if (roleToToggle) {
       try {
+        // Prepare the updated role object
         const updatedRole = {
           ...roleToToggle,
-          isActive: roleToToggle.isActive === 1 ? 0 : 1, // Toggle between 1 and 0
-          updatedOn: new Date().toISOString(),
+          isActive: roleToToggle.isActive === true ? false : true, // Toggle between true and false
+          updatedOn: new Date().toISOString(), // Ensure this field is formatted correctly for your backend
         };
 
         const token = localStorage.getItem(tokenKey); // Retrieve token from local storage
@@ -128,21 +164,28 @@ const Role = () => {
           }
         );
 
-        const updatedRoles = roles.map(role =>
-          role.id === updatedRole.id ? response.data : role
-        );
-        setRoles(updatedRoles);
-        setModalVisible(false);
-        setRoleToToggle(null);
-        alert('Status Changed successfully!');
+        // Check the response status and data
+        if (response.status === 200) {
+          // Update the roles state with the updated role
+          const updatedRoles = roles.map(role =>
+            role.id === updatedRole.id ? response.data : role
+          );
+          setRoles(updatedRoles);
+          setModalVisible(false); // Close the modal
+          setRoleToToggle(null); // Reset the selected role
+          alert('Status changed successfully!');
+        } else {
+          alert('Failed to change the status. Please try again.');
+        }
       } catch (error) {
         console.error('Error toggling role status:', error.response ? error.response.data : error.message);
-        alert('Failed to changing the status. Please try again.');
+        alert('Failed to change the status. Please try again.');
       }
     } else {
       console.error('No role selected for status toggle');
     }
   };
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const options = {
@@ -170,7 +213,13 @@ const Role = () => {
   });
 
 
-  const sortedRoles = filteredRoles.sort((a, b) => b.isActive - a.isActive);
+  // Sorting the filtered categories by 'active' status
+  const sortedRoles = filteredRoles.sort((a, b) => {
+    if (b.isActive === a.isActive) {
+      return 0; // Maintain original order if same status
+    }
+    return b.isActive ? 1 : -1; // Active categories come first
+  });
 
   const totalItems = sortedRoles.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -192,7 +241,7 @@ const Role = () => {
             />
           </div>
           <div className="mt-3 flex justify-start">
-            {editingIndex === null ? (
+            {editingRoleId === null ? (
               <button onClick={handleAddRole} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
                 <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Role
               </button>
@@ -250,9 +299,9 @@ const Role = () => {
                   <td className="border p-2">{role.role}</td>
                   <td className="border px-4 py-2">{formatDate(role.createdOn)}</td>
                   <td className="border px-4 py-2">{formatDate(role.updatedOn)}</td>
-                  <td className="border p-2">{role.isActive === 1 ? 'Active' : 'Inactive'}</td>
+                  <td className="border p-2">{role.isActive === true ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
-                    <button onClick={() => handleEditRole(index)}>
+                    <button onClick={() => handleEditRole(role.id)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
@@ -261,7 +310,7 @@ const Role = () => {
                       onClick={() => handleToggleActiveStatus(role)}
                       className={`p-1 rounded-full ${role.isActive === true ? 'bg-green-500' : 'bg-red-500'}`}
                     >
-                      {role.isActive === 1 ? (
+                      {role.isActive === true ? (
                         <LockOpenIcon className="h-5 w-5 text-white p-0.5" />
                       ) : (
                         <LockClosedIcon className="h-5 w-5 text-white p-0.5" />
@@ -310,7 +359,7 @@ const Role = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-semibold mb-4">Confirm Status Change</h2>
-            <p>Are you sure you want to {roleToToggle?.isActive === 1 ? 'deactivate' : 'activate'} the role <strong>{roleToToggle.role}</strong>?</p>
+            <p>Are you sure you want to {roleToToggle?.isActive === true ? 'deactivate' : 'activate'} the role <strong>{roleToToggle.role}</strong>?</p>
             <div className="mt-6 flex justify-end">
               <button
                 onClick={() => setModalVisible(false)}

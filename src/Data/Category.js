@@ -10,6 +10,7 @@ const Category = () => {
   const [formData, setFormData] = useState({ name: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [editingIndex, setEditingIndex] = useState(null);
+  const [editingCategoryId, setEditingCategoryId] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
@@ -35,10 +36,10 @@ const Category = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-  
+
     // Allow only letters and spaces
     const regex = /^[A-Za-z\s]*$/;
-  
+
     if (regex.test(value) || value === "") {
       setFormData((prevData) => ({
         ...prevData,
@@ -60,42 +61,68 @@ const Category = () => {
         alert('Categories added successfully!');
       } catch (error) {
         console.error('Error adding category:', error.response ? error.response.data : error.message);
-        alert('Failed to adding the Categories. Please try again.'); 
+        alert('Failed to adding the Categories. Please try again.');
       }
     }
   };
 
-  const handleEditCategory = (index) => {
-    setEditingIndex(index);
-    setFormData({ name: categories[index].name });
-  };
+  const handleEditCategory = (categoryId) => {
+    // Set the actual ID of the category being edited
+    setEditingCategoryId(categoryId);
 
+    // Find the category in the original list by its ID to populate the form
+    const categoryToEdit = categories.find(category => category.id === categoryId);
+
+    // Populate the form with the category data (if found)
+    if (categoryToEdit) {
+      setFormData({
+        name: categoryToEdit.name,
+        // Add other form fields as needed
+      });
+    }
+  };
   const handleSaveEdit = async () => {
-    if (formData.name.trim()) {
+    if (formData.name.trim() && editingCategoryId !== null) {
       try {
+        // Find the category in the original list by its ID
+        const categoryIndex = categories.findIndex(category => category.id === editingCategoryId);
+
+        if (categoryIndex === -1) {
+          alert('Category not found!');
+          return;
+        }
+
+        // Create the updated category object
         const updatedCategory = {
-          ...categories[editingIndex],
+          ...categories[categoryIndex],
           name: formData.name,
           updatedOn: new Date().toISOString(),
         };
+
+        // Send the update request to the server
         const response = await axios.put(`${CATEGORI_API}/update/${updatedCategory.id}`, updatedCategory, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
           },
         });
-        const updatedCategories = categories.map((category, index) =>
-          index === editingIndex ? response.data : category
+
+        // Update the original categories list with the updated category
+        const updatedCategories = categories.map(category =>
+          category.id === updatedCategory.id ? response.data : category
         );
+
+        // Update the state with the modified categories array
         setCategories(updatedCategories);
         setFormData({ name: '' });
-        setEditingIndex(null);
-        alert('Categories updated successfully!');
+        setEditingCategoryId(null); // Reset the editing state
+        alert('Category updated successfully!');
       } catch (error) {
         console.error('Error updating category:', error.response ? error.response.data : error.message);
-        alert('Failed to updating the Categories. Please try again.'); 
+        alert('Failed to update the category. Please try again.');
       }
     }
   };
+
 
   const handleToggleActiveStatus = (category) => {
     setCategoryToToggle(category);
@@ -138,7 +165,7 @@ const Category = () => {
       console.error('No Category selected for status toggle');
     }
   };
-  
+
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const options = {
@@ -165,9 +192,15 @@ const Category = () => {
     );
   });
 
+  // Sorting the filtered categories by 'active' status
+  const sortedCategories = filteredCategories.sort((a, b) => {
+    if (b.active === a.active) {
+      return 0; // Maintain original order if same status
+    }
+    return b.active ? 1 : -1; // Active categories come first
+  });
 
-  const sortedCategories = filteredCategories.sort((a, b) => b.active - a.active);
-
+  // Pagination logic
   const totalItems = sortedCategories.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const paginatedCategories = sortedCategories.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -188,16 +221,25 @@ const Category = () => {
             />
           </div>
           <div className="mt-3 flex justify-start">
-            {editingIndex === null ? (
-              <button onClick={handleAddCategory} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
+            {editingCategoryId === null ? (
+              // Button to add a new category
+              <button
+                onClick={handleAddCategory}
+                className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center"
+              >
                 <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Category
               </button>
             ) : (
-              <button onClick={handleSaveEdit} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
+              // Button to update an existing category
+              <button
+                onClick={handleSaveEdit}
+                className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center"
+              >
                 <CheckCircleIcon className="h-5 w-5 mr-1" /> Update
               </button>
             )}
           </div>
+
         </div>
 
         <div className="mb-4 bg-slate-100 p-4 rounded-lg flex justify-between items-center">
@@ -248,7 +290,7 @@ const Category = () => {
                   <td className="border p-2">{formatDate(category.updatedOn)}</td>
                   <td className="border p-2">{category.active === true ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
-                    <button onClick={() => handleEditCategory(index)}>
+                    <button onClick={() => handleEditCategory(category.id)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>

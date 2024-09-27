@@ -27,6 +27,8 @@ const Branch = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [branchToToggle, setBranchToToggle] = useState(null);
+  const [editingBranchId, setEditingBranchId] = useState(null); // Define the state for editing role ID
+
 
   // Retrieve token from localStorage
   const token = localStorage.getItem('tokenKey');
@@ -85,40 +87,71 @@ const Branch = () => {
   };
 
 
-  const handleEditBranch = (index) => {
-    setEditingIndex(index);
-    setFormData(branches[index]);
-  };
-
-  const handleSaveEdit = async () => {
-    if (formData.name && formData.address) {
-      try {
-        const updatedBranch = {
-          ...formData,
-          updatedOn: new Date().toISOString(),
-          isActive: formData.isActive ? 1 : 0,
-        };
-        const response = await axios.put(`${BRANCH_API}/update/${formData.id}`, updatedBranch, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        const updatedBranches = branches.map((branch, index) =>
-          index === editingIndex ? response.data : branch
-        );
-        setBranches(updatedBranches);
-        setFormData({ name: '', address: '', isActive: true }); // Reset with default isActive true
-        setEditingIndex(null);
-        alert('Branch updated successfully!');
-      } catch (error) {
-        console.error('Error updating branch:', error);
-        alert('Failed to update the Branch. Please try again.');
-      }
+  // Function to handle role editing
+  const handleEditBranch = (branchId) => {
+    // Set the actual ID of the branch being edited
+    setEditingBranchId(branchId);
+  
+    // Find the branch in the original list by its ID to populate the form
+    const branchToEdit = branches.find(branch => branch.id === branchId);
+  
+    // Populate the form with the branch data (if found)
+    if (branchToEdit) {
+      setFormData({
+        name: branchToEdit.name,
+        address: branchToEdit.address,
+        isActive: branchToEdit.isActive === 1, // Convert to boolean if needed
+        id: branchToEdit.id, // Ensure the ID is also in formData for updates
+      });
     } else {
-      console.error('Form data is incomplete');
+      console.error('Branch not found for ID:', branchId); // Log if the branch is not found
     }
   };
+  
+  const handleSaveEdit = async () => {
+    if (formData.name.trim() && editingBranchId !== null) {
+      try {
+        // Find the branch in the original list by its ID
+        const branchIndex = branches.findIndex(branch => branch.id === editingBranchId);
+  
+        if (branchIndex === -1) {
+          alert('Branch not found!');
+          return;
+        }
+  
+        // Create the updated branch object
+        const updatedBranch = {
+          ...branches[branchIndex],
+          name: formData.name,
+          address: formData.address,
+          isActive: formData.isActive ? 1 : 0,
+          updatedOn: new Date().toISOString(),
+        };
+  
+        // Send the update request to the server
+        const response = await axios.put(`${BRANCH_API}/update/${updatedBranch.id}`, updatedBranch, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem(tokenKey)}`,
+          },
+        });
+  
+        // Update the original branches list with the updated branch
+        const updatedBranches = branches.map(branch =>
+          branch.id === updatedBranch.id ? response.data : branch
+        );
+  
+        // Update the state with the modified branches array
+        setBranches(updatedBranches);
+        setFormData({ name: '', address: '', isActive: true }); // Reset form data
+        setEditingBranchId(null); // Reset the editing state
+        alert('Branch updated successfully!');
+      } catch (error) {
+        console.error('Error updating branch:', error.response ? error.response.data : error.message);
+        alert('Failed to update the branch. Please try again.');
+      }
+    }
+  };
+  
 
 
 
@@ -223,7 +256,7 @@ const Branch = () => {
             />
           </div>
           <div className="mt-3 flex justify-start">
-            {editingIndex === null ? (
+            {editingBranchId === null ? (
               <button onClick={handleAddBranch} className="bg-rose-900 text-white rounded-2xl p-2 flex items-center text-sm justify-center">
                 <PlusCircleIcon className="h-5 w-5 mr-1" /> Add Branch
               </button>
@@ -287,7 +320,7 @@ const Branch = () => {
                   <td className="border p-2">{formatDate(branch.updatedOn)}</td>
                   <td className="border p-2">{branch.isActive ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2 text-center">
-                    <button onClick={() => handleEditBranch((currentPage - 1) * itemsPerPage + index)}>
+                    <button onClick={() => handleEditBranch(branch.id)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>

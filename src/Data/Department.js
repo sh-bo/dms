@@ -121,40 +121,73 @@ const Department = () => {
     }
   };
 
-  const handleEditDepartment = (index) => {
-    setEditingIndex(index);
-    setFormData(departments[index]);
+  const handleEditDepartment = (departmentId) => {
+    // Set the ID of the department being edited
+    setEditingIndex(departmentId);
+    
+    // Find the department in the original list by its ID to populate the form
+    const departmentToEdit = departments.find(department => department.id === departmentId);
+    
+    // Populate the form with the department data (if found)
+    if (departmentToEdit) {
+      setFormData({
+        name: departmentToEdit.name,
+        branch: departmentToEdit.branch, // Ensure this is structured as needed
+        isActive: departmentToEdit.isActive === 1, // Convert to boolean if needed
+        id: departmentToEdit.id, // Ensure the ID is also in formData for updates
+      });
+    } else {
+      console.error('Department not found for ID:', departmentId); // Log if the department is not found
+    }
   };
-
+  
   const handleSaveEdit = async () => {
-    if (formData.name && formData.branch) {
+    if (formData.name.trim() && formData.branch) {
       try {
+        // Find the department in the original list by its ID
+        const departmentIndex = departments.findIndex(department => department.id === formData.id);
+  
+        if (departmentIndex === -1) {
+          alert('Department not found!');
+          return;
+        }
+  
+        // Create the updated department object
         const updatedDepartment = {
-          ...formData,
-          updatedOn: new Date().toISOString(),
+          ...departments[departmentIndex],
+          name: formData.name,
+          branch: formData.branch,
           isActive: formData.isActive ? 1 : 0,
+          updatedOn: new Date().toISOString(),
         };
-        const response = await axios.put(`${DEPAETMENT_API}/update/${formData.id}`, updatedDepartment, {
+  
+        // Send the update request to the server
+        const response = await axios.put(`${DEPAETMENT_API}/update/${updatedDepartment.id}`, updatedDepartment, {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
         });
-        const updatedDepartments = departments.map((department, index) =>
-          index === editingIndex ? response.data : department
+  
+        // Update the original departments list with the updated department
+        const updatedDepartments = departments.map(department =>
+          department.id === updatedDepartment.id ? response.data : department
         );
+  
+        // Update the state with the modified departments array
         setDepartments(updatedDepartments);
-        setFormData({ name: '', branch: null, isActive: true });
-        setEditingIndex(null);
+        setFormData({ name: '', branch: null, isActive: true }); // Reset form data
+        setEditingIndex(null); // Reset the editing state
         alert('Department updated successfully!');
       } catch (error) {
-        console.error('Error updating department:', error);
-        alert('Failed to updating the Department. Please try again.');
+        console.error('Error updating department:', error.response ? error.response.data : error.message);
+        alert('Failed to update the department. Please try again.');
       }
     } else {
       console.error('Form data is incomplete');
     }
   };
+  
 
 
   const handleToggleActive = (department) => {
@@ -308,7 +341,7 @@ const Department = () => {
                   <td className="border px-4 py-2">{formatDate(department.updatedOn)}</td>
                   <td className="border p-2">{department.isActive === 1 ? 'Active' : 'Inactive'}</td>
                   <td className="border p-2">
-                    <button onClick={() => handleEditDepartment(index)}>
+                    <button onClick={() => handleEditDepartment(department.id)}>
                       <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
                     </button>
                   </td>
