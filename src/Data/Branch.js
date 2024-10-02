@@ -35,7 +35,7 @@ const Branch = () => {
 
   useEffect(() => {
     fetchBranches();
-  },);
+  }, []); // Adding an empty dependency array to avoid infinite loop
 
   const fetchBranches = async () => {
     try {
@@ -152,8 +152,6 @@ const Branch = () => {
     }
   };
   
-
-
 
   const handleToggleActiveStatus = (branch) => {
     setBranchToToggle(branch);

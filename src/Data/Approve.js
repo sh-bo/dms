@@ -5,6 +5,8 @@ import {
   ArrowRightIcon,
   MagnifyingGlassIcon,
   CheckCircleIcon,
+  PrinterIcon,
+  XMarkIcon,
   EyeIcon,
 } from "@heroicons/react/24/solid";
 import { DOCUMENTHEADER_API } from "../API/apiConfig";
@@ -14,18 +16,23 @@ const Approve = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isOpen, setIsOpen] = useState(false);
+  // const [selectedDoc, setSelectedDoc] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState({ paths: [] });
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [documentToApprove, setDocumentToApprove] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [isRejectReasonModalOpen, setIsRejectReasonModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [files, setFiles] = useState([]);
 
   const tokenKey = "tokenKey"; // Key used to retrieve the token from local storage
 
   useEffect(() => {
     fetchDocuments();
+    fetchPaths();
   }, []);
 
   const fetchDocuments = async () => {
@@ -40,6 +47,61 @@ const Approve = () => {
       console.error("Error fetching documents:", error);
     }
   };
+  const fetchPaths = async (doc) => {
+    try {
+      const token = localStorage.getItem(tokenKey);
+      if (!token) {
+        throw new Error("No authentication token found.");
+      }
+
+      const response = await axios.get(
+        `http://localhost:8080/api/documents/byDocumentHeader/${doc.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      console.log("paths", response.data);
+
+      setSelectedDoc((prevDoc) => ({
+        ...prevDoc,
+        paths: response.data || [], // Ensure paths is an array
+      }));
+    } catch (error) {
+      console.error("Error fetching documents:", error.message || error);
+    }
+  };
+
+  const openFile = async (file) => {
+    const token = localStorage.getItem(tokenKey); // Get the token from localStorage
+    const createdOnDate = new Date(file.createdOn); // Convert timestamp to Date object
+    const year = createdOnDate.getFullYear(); // Extract year
+    const month = String(createdOnDate.getMonth() + 1).padStart(2, "0"); // Extract month and pad with zero
+    const category = file.documentHeader.categoryMaster.name; // Assuming categoryMaster has categoryName field
+    const fileName = file.docName; // The file name
+  
+    // Construct the URL based on the Spring Boot @GetMapping pattern
+    const fileUrl = `http://localhost:8080/api/documents/${year}/${month}/${category}/${fileName}`;
+  
+    try {
+      // Fetch the file using axios and pass the token in the headers
+      const response = await axios.get(fileUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob' // Important to get the response as a blob (binary large object)
+      });
+  
+      // Create a blob from the response and specify it as a PDF
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const blobUrl = window.URL.createObjectURL(blob);
+  
+      // Open the blob in a new tab
+      window.open(blobUrl, "_blank");
+    } catch (error) {
+      console.error("Error fetching file:", error);
+    }
+  };
+  
+  
 
   const handleStatusChange = (doc, status) => {
     if (status === "REJECTED") {
@@ -103,6 +165,31 @@ const Approve = () => {
     } catch (error) {
       console.error("Error rejecting document:", error);
     }
+  };
+
+  const openModal = (doc) => {
+    setSelectedDoc(doc); // Set the selected document without paths first
+    fetchPaths(doc); // Fetch paths and update the selected document with paths
+    setIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsOpen(false);
+    setSelectedDoc(null);
+  };
+
+  const printPage = () => {
+    window.print(); // Simple print functionality
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const options = {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    };
+    return date.toLocaleString("en-GB", options).replace(",", "");
   };
 
   const filteredDocuments = documents.filter((doc) =>
@@ -196,10 +283,9 @@ const Approve = () => {
                   </td>
                   <td className="border p-2">
                     {doc.employee &&
-                    doc.employee.department &&
-                    doc.employee.department.branch
-                      ? doc.employee.department.branch.name
-                      : "No Department Branch"}
+                    doc.employee.department 
+                      ? doc.employee.department.name
+                      : "No Department"}
                   </td>
                   <td className="border p-2">
                     {doc.employee && doc.employee.branch
@@ -218,19 +304,125 @@ const Approve = () => {
                     </select>
                   </td>
                   <td className="border p-2">
-                    <button
-                      onClick={() => {
-                        setSelectedDocument(doc);
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      <EyeIcon className="h-6 w-6 text-white bg-yellow-500 rounded-full p-1" />
-                    </button>
+                    <td className="">
+                      <button onClick={() => openModal(doc)}>
+                        <EyeIcon className="h-6 w-6 bg-green-400 rounded-xl p-1 text-white" />
+                      </button>
+                    </td>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <>
+            {isOpen && selectedDoc && (
+              <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-50">
+                <div className="relative bg-white rounded-lg shadow-lg max-w-lg w-full p-6">
+                  {/* Print Button */}
+                  <button
+                    className="absolute top-2 right-10 text-gray-500 hover:text-gray-700 no-print"
+                    onClick={printPage}
+                  >
+                    <PrinterIcon className="h-6 w-6" />
+                  </button>
+
+                  {/* Close Button */}
+                  <button
+                    className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 no-print"
+                    onClick={closeModal}
+                  >
+                    <XMarkIcon className="h-6 w-6 text-black hover:text-white hover:bg-red-800" />
+                  </button>
+
+                  {/* Modal Content Divided into Two Halves */}
+                  <div className="h-1/2 flex flex-col justify-between">
+                    {/* Top Half */}
+                    <div className="flex justify-between items-center mb-4 mt-4">
+                      <div className="flex items-start space-x-1">
+                        <p className="text-sm text-black font-bold border-b-4 border-black">
+                          D
+                        </p>
+                        <p className="text-sm text-black font-bold border-t-4 border-black">
+                          MS
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">
+                          <strong>Uploaded Date:</strong>{" "}
+                          {formatDate(selectedDoc?.createdOn)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Bottom Half */}
+                    <div className="text-left">
+                      <p className="text-sm text-gray-600">
+                        <strong>File No.:</strong>{" "}
+                        {selectedDoc?.fileNo || "N/A"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Title:</strong> {selectedDoc?.title || "N/A"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Subject:</strong>{" "}
+                        {selectedDoc?.subject || "N/A"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Version:</strong>{" "}
+                        {selectedDoc?.version || "N/A"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Uploaded By:</strong>{" "}
+                        {selectedDoc?.employee.name || "N/A"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Category:</strong>{" "}
+                        {selectedDoc?.categoryMaster?.name || "No Category"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Branch:</strong>{" "}
+                        {selectedDoc?.branch?.name || "No branch"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <strong>Department:</strong>{" "}
+                        {selectedDoc?.department?.name || "No department"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="h-1/2 flex flex-col items-center justify-center mt-4">
+                    <h1 className="text-sm text-center font-bold mb-2">
+                      Attached Files
+                    </h1>
+
+                    {Array.isArray(selectedDoc.paths) &&
+                    selectedDoc.paths.length > 0 ? (
+                      <ul className="list-disc list-inside">
+                        {selectedDoc.paths.map((file, index) => (
+                          <li key={index} className="mb-2">
+                            <span className="mr-4">{file.docName}</span>
+                            <button
+                              onClick={() => openFile(file)} // Pass the file object to openFile function
+                              className="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                            >
+                              Open
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-gray-500">
+                        No attached files available.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         </div>
 
         <div className="flex justify-between items-center mt-4">
@@ -318,79 +510,6 @@ const Approve = () => {
           </div>
         </div>
       )}
-
-      {/* Document View Modal */}
-       {/* {isModalOpen && selectedDocument && (
-      //   <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-      //     <div className="bg-white p-6 rounded shadow-lg w-full max-w-xl">
-      //       <h2 className="text-xl font-semibold mb-4">Document Details</h2>
-      //       <div>
-      //         <p>
-      //           <strong>Title:</strong> {selectedDocument.title}
-      //         </p>
-      //         <p>
-      //           <strong>File No:</strong> {selectedDocument.fileNo}
-      //         </p>
-      //         <p>
-      //           <strong>Subject:</strong> {selectedDocument.subject}
-      //         </p>
-      //         <p>
-      //           <strong>Version:</strong> {selectedDocument.version}
-      //         </p>
-      //         <p>
-      //           <strong>Created On:</strong>{" "}
-      //           {new Date(selectedDocument.createdOn).toLocaleDateString()}
-      //         </p>
-      //         <p>
-      //           <strong>Updated On:</strong>{" "}
-      //           {new Date(selectedDocument.updatedOn).toLocaleDateString()}
-      //         </p>
-      //         <p>
-      //           <strong>Category:</strong>{" "}
-      //           {selectedDocument.category
-      //             ? selectedDocument.category.name
-      //             : ""}
-      //         </p>
-      //         <p>
-      //           <strong>Year:</strong>{" "}
-      //           {selectedDocument.year ? selectedDocument.year.name : ""}
-      //         </p>
-      //         <p>
-      //           <strong>Type:</strong>{" "}
-      //           {selectedDocument.type ? selectedDocument.type.name : ""}
-      //         </p>
-      //         <p>
-      //           <strong>EID:</strong>{" "}
-      //           {selectedDocument.employee
-      //             ? selectedDocument.employee.id
-      //             : "N/A"}
-      //         </p>
-      //         <p>
-      //           <strong>Department:</strong>{" "}
-      //           {selectedDocument.department
-      //             ? selectedDocument.department.name
-      //             : ""}
-      //         </p>
-      //         <p>
-      //           <strong>Branch:</strong>{" "}
-      //           {selectedDocument.branch ? selectedDocument.branch.name : ""}
-      //         </p>
-      //         <p>
-      //           <strong>Approval:</strong>{" "}
-      //           {selectedDocument.approved ? "Approved" : "Not Approved"}
-      //         </p>
-      //       </div>
-      //       <div className="mt-4 flex justify-end">
-      //         <button
-      //           className="bg-gray-500 text-white px-4 py-2 rounded"
-      //           onClick={() => setIsModalOpen(false)}
-      //         >
-      //           Close
-      //         </button>
-      //       </div>
-      //     </div>
-      //   </div>
-      // )} */}
     </div>
   );
 };
