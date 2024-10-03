@@ -15,7 +15,7 @@ function Header({ toggleSidebar, userName }) {
   };
 
   const handleChangePassword = () => {
-    navigate('/change-password');
+    navigate('/change-password'); // Navigate to the change password page
   };
 
   const toggleDropdown = () => {

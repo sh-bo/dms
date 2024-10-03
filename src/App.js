@@ -17,6 +17,7 @@ import RejectedDocs from "./Pages/RejectedDocs";
 import ApproveByAdmin from "./Pages/ApproveByAdmin";
 import RejectByAdmin from "./Pages/RejectByAdmin";
 import UserRoleAssing from "./Pages/UserRoleAssing";
+import ChangePasswordPage from "./Pages/ChangePasswordPage";
 import PrivateRoute from "./Components/PrivateRoute";
 
 // Define the roles
@@ -40,6 +41,7 @@ const protectedRoutes = [
   { path: "/all-documents", element: <Documents />, allowedRoles: [USER] },
   { path: "/approvedDocs", element: <ApprovedDocs />, allowedRoles: [USER] },
   { path: "/rejectedDocs", element: <RejectedDocs />, allowedRoles: [USER] },
+  { path: "/change-password", element: <ChangePasswordPage />, allowedRoles: [USER, ADMIN] },
 
 ];
 
