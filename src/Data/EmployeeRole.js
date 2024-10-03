@@ -7,6 +7,9 @@ const EmployeeRole = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRole, setSelectedRole] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState(""); // Add state for success message
   const token = localStorage.getItem("tokenKey");
 
   useEffect(() => {
@@ -54,10 +57,11 @@ const EmployeeRole = () => {
   };
 
   const confirmRoleAssignment = async () => {
+    setIsSubmitting(true); // Disable the button when the request starts
     try {
       const response = await axios.put(
-        `http://localhost:8080/employee/employee/${selectedUser}/role`, // Use selectedUser ID
-        { roleName: selectedRole }, // Send roleName in the request body
+        `http://localhost:8080/employee/${selectedUser}/role`,
+        { roleName: selectedRole },
         {
           headers: {
             "Content-Type": "application/json",
@@ -65,13 +69,36 @@ const EmployeeRole = () => {
           },
         }
       );
+  
       console.log("Role updated successfully:", response.data);
-      fetchUsers(); // Refresh user list after role update
-      setModalVisible(false);
-      setSelectedUser(null);
-      setSelectedRole("");
+      setSuccessMessage(response.data); // Set the success message
+      fetchUsers(); // Refresh the user list after role update
+      setModalVisible(false); // Close the modal
+      setSelectedUser(null); // Reset the selected user
+      setSelectedRole(""); // Reset the selected role
+      setTimeout(() => setSuccessMessage(""), 5000); // Clear success message after 5 seconds
     } catch (error) {
-      console.error("Error updating role:", error);
+      if (error.response && error.response.data) {
+        const backendMessage = error.response.data;
+  
+        if (backendMessage.includes("Employee with ID")) {
+          setErrorMessage("Employee Not Found");
+        } else if (backendMessage.includes("Role with ID")) {
+          setErrorMessage("Role Not Found");
+        } else if (backendMessage.includes("already an admin")) {
+          setErrorMessage("There is already an admin assigned to this branch.");
+        } else {
+          setErrorMessage(`Error: ${backendMessage}`);
+        }
+      } else {
+        setErrorMessage(
+          "An unexpected error occurred while updating the role. Please try again."
+        );
+        console.error("Error updating role:", error);
+      }
+      setTimeout(() => setErrorMessage(""), 5000); // Clear error message after 5 seconds
+    } finally {
+      setIsSubmitting(false); // Re-enable the button after the request completes
     }
   };
 
@@ -117,7 +144,7 @@ const EmployeeRole = () => {
                   </td>
                   <td className="border p-2">{formatDate(user.createdOn)}</td>
                   <td className="border p-2">
-                    {user.createdBy.name || " "}
+                    {/* {user.createdBy.name || " "} */}
                   </td>
                   <td className="border p-2">
                     {user.employeeType || "No Role"}
@@ -153,36 +180,50 @@ const EmployeeRole = () => {
       </div>
 
       {modalVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold mb-4">
-              Confirm Role Assignment
-            </h2>
-            <p className="mb-4">
-              Are you sure you want to assign the role{" "}
-              <strong>{selectedRole}</strong> to{" "}
-              <strong>
-                {users.find((user) => user.id === selectedUser)?.name}
-              </strong>
-              ?
-            </p>
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => setModalVisible(false)}
-                className="bg-gray-300 p-2 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmRoleAssignment}
-                className="bg-blue-500 text-white p-2 rounded-lg"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="bg-white p-6 rounded-lg shadow-lg">
+      <h2 className="text-lg font-semibold mb-4">Confirm Role Assignment</h2>
+      {successMessage && ( // Conditionally render success message
+        <p className="text-green-600 mb-4">{successMessage}</p>
       )}
+      {errorMessage && ( // Conditionally render error message
+        <p className="text-red-600 mb-4">{errorMessage}</p>
+      )}
+      <p className="mb-4">
+        Are you sure you want to assign the role{" "}
+        <strong>{selectedRole}</strong> to{" "}
+        <strong>
+          {users.find((user) => user.id === selectedUser)?.name}
+        </strong>
+        ?
+      </p>
+      <div className="flex justify-end gap-4">
+        <button
+          onClick={() => {
+            setModalVisible(false);
+            setErrorMessage(""); // Reset error message when closing the modal
+            setSuccessMessage(""); // Reset success message when closing the modal
+          }}
+          className="bg-gray-300 p-2 rounded-lg"
+          disabled={isSubmitting} // Disable Cancel button if submitting
+        >
+          Cancel
+        </button>
+        <button
+          onClick={confirmRoleAssignment}
+          className={`${
+            isSubmitting
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-500"
+          } text-white p-2 rounded-lg`}
+          disabled={isSubmitting} // Disable Confirm button when submitting
+        >
+          {isSubmitting ? "Processing..." : "Confirm"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

@@ -5,7 +5,6 @@ import {
   LockClosedIcon,
   LockOpenIcon,
   MagnifyingGlassIcon,
-  
   PencilIcon,
   PlusCircleIcon,
 } from "@heroicons/react/24/solid";
@@ -27,7 +26,7 @@ const UserAddEmployee = () => {
     email: "",
     mobile: "",
     branch: { id: "", name: "" }, // Ensure initial structure
-    department: { id: "", name: "" }, // Ensure initial structure
+    // department: { id: "", name: "" }, // Ensure initial structure
   });
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,48 +50,79 @@ const UserAddEmployee = () => {
     fetchOptions();
   }, []);
 
+  // const fetchEmployees = async () => {
+  //   setLoading(true);
+  //   setError("");
+  //   try {
+  //     const response = await axios.get(
+  //       `http://localhost:8080/employee/findAll`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("tokenKey")}`,
+  //         },
+  //       }
+  //     );
+  //     setEmployees(response.data);
+  //     console.log(response.data);
+  //   } catch (error) {
+  //     setError("Error fetching employees.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchEmployees = async () => {
     setLoading(true);
     setError("");
     try {
-      const response = await axios.get(
-        `http://localhost:8080/employee/findAll`,
+      // Retrieve userId from localStorage
+      const userId = localStorage.getItem("userId");
+  
+      // Fetch branchId using userId
+      const branchResponse = await axios.get(
+        `http://localhost:8080/employee/findById/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("tokenKey")}`,
           },
         }
       );
-      setEmployees(response.data);
-      console.log(response.data);
+      
+      const branchId = branchResponse.data.branch.id; // Adjust this based on your API response structure
+  
+      // Fetch employees using the branchId
+      const employeeResponse = await axios.get(
+        `http://localhost:8080/employee/branch/${branchId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("tokenKey")}`,
+          },
+        }
+      );
+  
+      setEmployees(employeeResponse.data);
+      console.log(employeeResponse.data);
     } catch (error) {
       setError("Error fetching employees.");
     } finally {
       setLoading(false);
     }
   };
-
+  
   const fetchOptions = async () => {
     setLoading(true);
     setError("");
     try {
       const token = localStorage.getItem("tokenKey"); // Retrieve the token from local storage
 
-      const [branchesRes, departmentsRes, rolesRes] = await Promise.all([
-        axios.get(`${BRANCH_API}/findActiveRole`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-        axios.get(`${DEPAETMENT_API}/findActiveRole`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }),
-      ]);
+      const branchesRes = await axios.get(`${BRANCH_API}/findActiveRole`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setBranchOptions(branchesRes.data);
-      setDepartmentOptions(departmentsRes.data);
+      console.log(branchesRes.data);
     } catch (error) {
       setError("Error fetching options.");
     } finally {
@@ -100,6 +130,29 @@ const UserAddEmployee = () => {
     }
   };
 
+  const fetchDepartments = async (branchId) => {
+    setLoading(true);
+    setError("");
+    try {
+      const token = localStorage.getItem("tokenKey");
+
+      // Fetch departments for the selected branch
+      const departmentsRes = await axios.get(
+        `${DEPAETMENT_API}/findByBranch/${branchId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setDepartmentOptions(departmentsRes.data);
+    } catch (error) {
+      setError("Error fetching departments.");
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevFormData) => ({
@@ -118,6 +171,11 @@ const UserAddEmployee = () => {
         name: selectedName,
       },
     }));
+
+    // Fetch departments when a branch is selected
+    if (key === "branch") {
+      fetchDepartments(value); // Pass the selected branch ID to fetch related departments
+    }
   };
 
   const handleAddEmployee = async () => {
@@ -125,9 +183,11 @@ const UserAddEmployee = () => {
 
     const isFormDataValid = formData.name && formData.email && formData.mobile;
     const isBranchSelected = formData.branch && formData.branch.id;
-    const isDepartmentSelected = formData.department && formData.department.id;
+    //const isDepartmentSelected = formData.department && formData.department.id;
 
-    if (isFormDataValid && isBranchSelected && isDepartmentSelected) {
+    // if (isFormDataValid && isBranchSelected && isDepartmentSelected) {
+    if (isFormDataValid && isBranchSelected) {
+
       setIsSubmitting(true); // Disable button after click
 
       try {
@@ -155,17 +215,17 @@ const UserAddEmployee = () => {
           updatedOn: new Date().toISOString(),
           createdBy, // Pass as an object
           updatedBy, // Pass as an object
-          department: {
-            id: formData.department.id,
-            name: formData.department.name,
-          },
+          // department: {
+          //   id: formData.department.id,
+          //   name: formData.department.name,
+          // },
           branch: { id: formData.branch.id, name: formData.branch.name },
         };
 
         console.log("Employee Data to Send:", employeeData);
 
         const response = await axios.post(
-          "http://localhost:8080/register/save",
+          "http://localhost:8080/register/create",
           employeeData,
           {
             headers: {
@@ -189,7 +249,7 @@ const UserAddEmployee = () => {
             email: "",
             mobile: "",
             branch: { id: "", name: "" },
-            department: { id: "", name: "" },
+            // department: { id: "", name: "" },
           });
 
           setError("");
@@ -219,15 +279,15 @@ const UserAddEmployee = () => {
     if (employeeToEdit) {
       setEditingIndex(employeeId);
       setFormData({
-        id: employeeToEdit.id || "",
-        name: employeeToEdit.name || "",
-        email: employeeToEdit.email || "",
-        mobile: employeeToEdit.mobile || "",
+        id: employeeToEdit.id,
+        name: employeeToEdit.name,
+        email: employeeToEdit.email,
+        mobile: employeeToEdit.mobile,
         branch: employeeToEdit.branch || { id: "", name: "", address: "" },
         department: employeeToEdit.department || { id: "", name: "" },
-        password: "", // Password will not be pre-filled, only updated if needed
-        createdOn: employeeToEdit.createdOn || "",
-        enabled: employeeToEdit.enabled || false,
+        password: "", // Password field left empty for editing
+        createdOn: employeeToEdit.createdOn,
+        enabled: employeeToEdit.enabled, // No need for fallback since it should always be a boolean
       });
     }
   };
@@ -241,8 +301,7 @@ const UserAddEmployee = () => {
 
     if (isFormDataValid && isBranchSelected && isDepartmentSelected) {
       try {
-        const token = localStorage.getItem("tokenKey"); // Assuming token is stored in localStorage
-        console.log("Retrieved Token:", token);
+        const token = localStorage.getItem("tokenKey");
 
         const updatedEmployeeData = {
           name: formData.name,
@@ -253,15 +312,12 @@ const UserAddEmployee = () => {
             id: formData.department.id,
             name: formData.department.name,
           },
-          // Optionally, if updating the password
-          password: formData.password ? formData.password : null, // Only include password if provided
+          // Only include password if it's provided by the user
+          password: formData.password ? formData.password : null,
           updatedOn: new Date().toISOString(),
           enabled: formData.enabled,
         };
 
-        console.log("Updated Employee Data to Send:", updatedEmployeeData);
-
-        // Make PUT request to update the employee
         const response = await axios.put(
           `http://localhost:8080/employee/update/${formData.id}`,
           updatedEmployeeData,
@@ -273,22 +329,20 @@ const UserAddEmployee = () => {
           }
         );
 
-        console.log("API Response:", response.data);
-
         if (response.data) {
-          // Update the employees list in the frontend
           const updatedEmployees = employees.map((emp) =>
             emp.id === formData.id ? response.data : emp
           );
           setEmployees(updatedEmployees);
 
+          // Reset form data
           setFormData({
             name: "",
             email: "",
             mobile: "",
             branch: { id: "", name: "", address: "" },
             department: { id: "", name: "" },
-            password: "", // Reset password field
+            password: "",
             createdOn: "",
             enabled: false,
           });
@@ -461,7 +515,7 @@ const UserAddEmployee = () => {
             {/* Branch Selection */}
             <select
               name="branch"
-              value={formData.branch.id || ""}
+              value={formData.branch?.id || ""}
               onChange={(e) => handleSelectChange(e, "branch")}
               className="p-2 border rounded-md outline-none"
             >
@@ -474,9 +528,9 @@ const UserAddEmployee = () => {
             </select>
 
             {/* Department Selection */}
-            <select
+            {/* <select
               name="department"
-              value={formData.department.id || ""}
+              value={formData.department?.id || ""}
               onChange={(e) => handleSelectChange(e, "department")}
               className="p-2 border rounded-md outline-none"
             >
@@ -486,7 +540,7 @@ const UserAddEmployee = () => {
                   {department.name}
                 </option>
               ))}
-            </select>
+            </select> */}
           </div>
           <div className="mt-3 flex justify-start">
             {editingIndex === null ? (
@@ -546,7 +600,7 @@ const UserAddEmployee = () => {
 
             <table className="w-full border-collapse border">
               <thead className="bg-gray-100">
-                <tr className="bg-slate-100">
+                <tr>
                   <th className="border p-2 text-left">SR.</th>
                   <th className="border p-2 text-left">Name</th>
                   <th className="border p-2 text-left">Email</th>
@@ -556,8 +610,8 @@ const UserAddEmployee = () => {
                   <th className="border p-2 text-left">Role</th>
                   <th className="border p-2 text-left">Created Date</th>
                   <th className="border p-2 text-left">Updated Date</th>
-                  <th className="border p-2 text-left">Created By</th>{" "}
-                  <th className="border p-2 text-left">Updated By</th>{" "}
+                  <th className="border p-2 text-left">Created By</th>
+                  <th className="border p-2 text-left">Updated By</th>
                   <th className="border p-2 text-left">Status</th>
                   <th className="border p-2 text-left">Edit</th>
                   <th className="border p-2 text-left">Access</th>
@@ -565,7 +619,7 @@ const UserAddEmployee = () => {
               </thead>
               <tbody>
                 {paginatedEmployees.map((employee, index) => (
-                  <tr key={index}>
+                  <tr key={employee.id}>
                     <td className="border p-2">{index + 1}</td>
                     <td className="border p-2">{employee.name}</td>
                     <td className="border p-2">{employee.email}</td>
@@ -592,7 +646,7 @@ const UserAddEmployee = () => {
                       {employee.updatedBy?.name || "Unknown"}
                     </td>
                     <td className="border p-2">
-                      {employee.active ? 'Active' : 'Inactive'}
+                      {employee.active ? "Active" : "Inactive"}
                     </td>
                     <td className="border p-2">
                       <button

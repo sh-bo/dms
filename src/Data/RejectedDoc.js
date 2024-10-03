@@ -26,7 +26,7 @@ function RejectedDoc() {
     try {
       setLoading(true);
       let response;
-      
+
       // Differentiate between ADMIN and USER API calls
       if (role === "USER") {
         response = await axios.get(
@@ -66,14 +66,14 @@ function RejectedDoc() {
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const options = {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
       // hour: '2-digit',
       // minute: '2-digit',
-      // hour12: true 
+      // hour12: true
     };
-    return date.toLocaleString('en-GB', options).replace(',', '');
+    return date.toLocaleString("en-GB", options).replace(",", "");
   };
 
   if (loading) return <div>Loading...</div>;
@@ -94,37 +94,49 @@ function RejectedDoc() {
               <th className="border p-2 text-left">Approval Status</th>
               <th className="border p-2 text-left">Rejected Reason</th>
               <th className="border p-2 text-left">Rejected Date</th>
+              {role === "USER" && (
               <th className="border p-2 text-left">Edit</th>
+            )}
             </tr>
           </thead>
           <tbody>
             {documents.map((doc, index) => (
               <tr key={doc.id}>
-                <td className="border p-2">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                <td className="border p-2">
+                  {(currentPage - 1) * itemsPerPage + index + 1}
+                </td>
                 <td className="border p-2">{doc.fileNo}</td>
                 <td className="border p-2">{doc.title}</td>
                 <td className="border p-2">{doc.subject}</td>
                 <td className="border p-2">{doc.version}</td>
-                <td className="border p-2">{doc.categoryMaster ? doc.categoryMaster.name : "No Category"}</td>
+                <td className="border p-2">
+                  {doc.categoryMaster ? doc.categoryMaster.name : "No Category"}
+                </td>
                 <td className="border p-2">{doc.approvalStatus}</td>
                 <td className="border p-2">{doc.rejectionReason}</td>
-                <td className="border px-4 py-2">{formatDate(doc.updatedOn)}</td>
+                <td className="border px-4 py-2">
+                  {formatDate(doc.updatedOn)}
+                </td>
+              {role === "USER" && (
+
                 <td className="border p-2">
-                    <button onClick={() => handleEdit(doc.id)}>
-                      <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
-                    </button>
-                  </td>
+                  <button onClick={() => handleEdit(doc.id)}>
+                    <PencilIcon className="h-6 w-6 text-white bg-yellow-400 rounded-xl p-1" />
+                  </button>
+                </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-
       <div className="flex justify-between items-center mt-4">
         <div>
           <span className="text-sm text-gray-700">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} entries
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}{" "}
+            entries
           </span>
         </div>
         <div className="flex items-center">
@@ -140,7 +152,9 @@ function RejectedDoc() {
             Page {currentPage} of {totalPages}
           </span>
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
             className="bg-slate-200 px-3 py-1 rounded ml-3"
           >

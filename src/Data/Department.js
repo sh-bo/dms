@@ -33,11 +33,11 @@ const Department = () => {
   useEffect(() => {
     fetchBranches();
     fetchDepartments();
-  },);
+  },[]);
 
   const fetchBranches = async () => {
     try {
-      const response = await axios.get(`${BRANCH_API}/findAll`, {
+      const response = await axios.get(`${BRANCH_API}/findActiveRole`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
